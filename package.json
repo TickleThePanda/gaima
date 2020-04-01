@@ -1,0 +1,19 @@
+{
+  "name": "gallery-manager",
+  "version": "0.0.1",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "enquirer": "^2.3.4",
+    "yargs": "^15.3.1"
+  },
+  "bin": {
+    "gaima": "./src/index.js"
+  }
+}
