@@ -26,22 +26,26 @@ export class GaimaCli {
             .command({
               command: 'add <aspect-ratio> <sizes...>',
               desc: 'Add a new image type',
-              builder: yargs => buildTypeSpecifier(yargs)
+              builder: yargs => buildTypeSpecifier(yargs),
+              handler: args => this.app.type.add(args)
             })
             .command({
               command: 'set <aspect-ratio> <sizes...>',
               desc: 'Set the sizes for an image type',
-              builder: yargs => buildTypeSpecifier(yargs)
+              builder: yargs => buildTypeSpecifier(yargs),
+              handler: args => this.app.type.set(args)
             })
             .command({
               command: 'list',
               desc: 'List image types',
-              builder: yargs => yargs
+              builder: yargs => yargs,
+              handler: args => this.app.type.list(args)
             })
             .command({
               command: 'remove <aspect-ratio>',
               desc: 'Remove image type',
-              builder: yargs => yargs
+              builder: yargs => yargs,
+              handler: args => this.app.type.remove(args)
             })
             .demandCommand()
         })
