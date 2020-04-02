@@ -16,7 +16,8 @@ export class GaimaCli {
         .command({
           command: 'init',
           desc: 'Initialise a gallery',
-          builder: yargs => yargs
+          builder: yargs => yargs,
+          handler: args => this.app.init.init(args)
         })
         .command({
           command: 'type',
