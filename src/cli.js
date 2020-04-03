@@ -1,4 +1,5 @@
 import yargs from 'yargs';
+import { ConfigError } from './config-manager.js';
 
 export class GaimaCli {
 
@@ -7,96 +8,105 @@ export class GaimaCli {
   }
 
   async run() {
-    /*
-     * Wraps this in a promise to handle the onFinishCommand
-     * resolution asynchronously to make yargs async.
-     */
-    return await new Promise((resolve, reject) => {
-      yargs
-        .command({
-          command: 'init',
-          desc: 'Initialise a gallery',
-          builder: yargs => yargs,
-          handler: args => this.app.init.init(args)
-        })
-        .command({
-          command: 'type',
-          desc: 'Manage the types of images',
-          builder: yargs => yargs
-            .command({
-              command: 'add <aspect-ratio> <sizes...>',
-              desc: 'Add a new image type',
-              builder: yargs => buildTypeSpecifier(yargs),
-              handler: args => this.app.type.add(args)
-            })
-            .command({
-              command: 'set <aspect-ratio> <sizes...>',
-              desc: 'Set the sizes for an image type',
-              builder: yargs => buildTypeSpecifier(yargs),
-              handler: args => this.app.type.set(args)
-            })
-            .command({
-              command: 'list',
-              desc: 'List image types',
-              builder: yargs => yargs,
-              handler: args => this.app.type.list(args)
-            })
-            .command({
-              command: 'remove <aspect-ratio>',
-              desc: 'Remove image type',
-              builder: yargs => yargs,
-              handler: args => this.app.type.remove(args)
-            })
-            .demandCommand()
-        })
-        .command({
-          command: 'gallery',
-          desc: 'Manage the galleries',
-          builder: (yargs) => yargs
-            .command({
-              command: 'add <name>',
-              desc: 'Add a new gallery',
-              builder: (yargs) => yargs
-                .option('description')
-            })
-            .command({
-              command: 'list',
-              desc: 'List the galleries',
-              builder: (yargs) => yargs,
-            })
-            .command({
-              command: 'remove <name>',
-              desc: 'Remove gallery',
-              builder: (yargs) => yargs
-            })
-            .demandCommand(),
-        })
-        .command({
-          command: 'image',
-          desc: 'Manage the images in a gallery',
-          builder: (yargs) => yargs
-            .command({
-              command: 'add <gallery> <image-name> <image-path>',
-              desc: 'Add a new image to a gallery',
-              builder: (yargs) => yargs
-                .option('description')
-            })
-            .command({
-              command: 'list <gallery>',
-              desc: 'Lists the images in a gallery',
-              builder: (yargs) => yargs
-            })
-            .command({
-              command: 'remove <gallery> <image-name>',
-              desc: 'Removes the image from the gallery',
-              builder: (yargs) => yargs
-            })
-            .demandCommand(),
-        })
-        .demandCommand()
-        .onFinishCommand(resolve)
-        .argv;
-    });
+
+    try {
+      /*
+      * Wraps this in a promise to handle the onFinishCommand
+      * resolution asynchronously to make yargs async.
+      */
+      return await new Promise((resolve, reject) => {
+        yargs
+          .command({
+            command: 'init',
+            desc: 'Initialise a gallery',
+            builder: yargs => yargs,
+            handler: args => this.app.init.init(args)
+          })
+          .command({
+            command: 'type',
+            desc: 'Manage the types of images',
+            builder: yargs => yargs
+              .command({
+                command: 'add <aspect-ratio> <sizes...>',
+                desc: 'Add a new image type',
+                builder: yargs => buildTypeSpecifier(yargs),
+                handler: args => this.app.type.add(args)
+              })
+              .command({
+                command: 'set <aspect-ratio> <sizes...>',
+                desc: 'Set the sizes for an image type',
+                builder: yargs => buildTypeSpecifier(yargs),
+                handler: args => this.app.type.set(args)
+              })
+              .command({
+                command: 'list',
+                desc: 'List image types',
+                builder: yargs => yargs,
+                handler: args => this.app.type.list(args)
+              })
+              .command({
+                command: 'remove <aspect-ratio>',
+                desc: 'Remove image type',
+                builder: yargs => yargs,
+                handler: args => this.app.type.remove(args)
+              })
+              .demandCommand()
+          })
+          .command({
+            command: 'gallery',
+            desc: 'Manage the galleries',
+            builder: (yargs) => yargs
+              .command({
+                command: 'create <name>',
+                desc: 'Creates a new gallery',
+                builder: (yargs) => yargs
+                  .option('description')
+              })
+              .command({
+                command: 'list',
+                desc: 'List the galleries',
+                builder: (yargs) => yargs,
+              })
+              .command({
+                command: 'remove <name>',
+                desc: 'Remove gallery',
+                builder: (yargs) => yargs
+              })
+              .demandCommand(),
+          })
+          .command({
+            command: 'image',
+            desc: 'Manage the images in a gallery',
+            builder: (yargs) => yargs
+              .command({
+                command: 'add <gallery> <image-name> <image-path>',
+                desc: 'Add a new image to a gallery',
+                builder: (yargs) => yargs
+                  .option('description')
+              })
+              .command({
+                command: 'list <gallery>',
+                desc: 'Lists the images in a gallery',
+                builder: (yargs) => yargs
+              })
+              .command({
+                command: 'remove <gallery> <image-name>',
+                desc: 'Removes the image from the gallery',
+                builder: (yargs) => yargs
+              })
+              .demandCommand(),
+          })
+          .demandCommand()
+          .onFinishCommand(resolve)
+          .argv;
+      });
+    } catch (e) {
+      if (e instanceof ConfigError) {
+        console.log('Error: ' + e.message);
+      } else {
+        throw e;
+      }
+    }
   }
 }
 

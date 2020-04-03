@@ -1,3 +1,9 @@
+export class ConfigError extends Error {
+  constructor (message) {
+    super(message);
+  }
+}
+
 export class ConfigManager {
   constructor (config) {
     this.config = config;
@@ -15,7 +21,7 @@ export class ConfigManager {
 
   addType(aspectRatio, sizes) {
     if (this.getType(aspectRatio) !== undefined) {
-      throw new Error('Aspect ratio ' + arName + ' already exists');
+      throw new ConfigError('Aspect ratio ' + arName + ' already exists');
     }
 
     this.setType(aspectRatio, sizes);
