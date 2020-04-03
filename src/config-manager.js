@@ -44,7 +44,7 @@ export class ConfigManager {
   }
 
   removeType(aspectRatio) {
-    if (typeof this.config.types !== 'array') {
+    if (!Array.isArray(this.config.types)) {
       return;
     }
 
