@@ -4,19 +4,19 @@ export class GaimaTypeCommand {
     this.configManager = configManager;
   }
 
-  async add({ aspectRatio, sizes }) {
+  add({ aspectRatio, sizes }) {
     this.configManager.addType(aspectRatio, sizes);
   }
 
-  async set({ aspectRatio, sizes }) {
+  set({ aspectRatio, sizes }) {
     this.configManager.setType(aspectRatio, sizes);
   }
 
-  async remove({ aspectRatio }) {
+  remove({ aspectRatio }) {
     this.configManager.remove(aspectRatio);
   }
 
-  async list() {
+  list() {
 
     const types = this.configManager.getTypes();
 
