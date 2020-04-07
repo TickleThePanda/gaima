@@ -16,9 +16,18 @@ async function run() {
 
   const cli = new GaimaCli(app);
 
-  await cli.run();
+  let success = false;
 
-  store.save(configManager.config)
+  try {
+    await cli.run();
+    success = true;
+  } catch (_) {
+    success = false;
+  }
+
+  if (success) {
+    store.save(configManager.config);
+  }
 
 }
 

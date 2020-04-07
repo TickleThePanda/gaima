@@ -103,6 +103,7 @@ export class GaimaCli {
     } catch (e) {
       if (e instanceof ConfigError) {
         console.log('Error: ' + e.message);
+        throw e;
       } else {
         throw e;
       }
