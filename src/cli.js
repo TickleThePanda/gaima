@@ -50,7 +50,7 @@ export class GaimaCli {
                 builder: yargs => yargs,
                 handler: args => this.app.type.remove(args)
               })
-              .demandCommand()
+              .demandCommand(1, 'Please provide a "type" command.')
           })
           .command({
             command: 'gallery',
@@ -72,7 +72,7 @@ export class GaimaCli {
                 desc: 'Remove gallery',
                 builder: (yargs) => yargs
               })
-              .demandCommand(),
+              .demandCommand(1, 'Please provide a "gallery" command.'),
           })
           .command({
             command: 'image',
@@ -94,9 +94,9 @@ export class GaimaCli {
                 desc: 'Removes the image from the gallery',
                 builder: (yargs) => yargs
               })
-              .demandCommand(),
+              .demandCommand(1, 'Please provide an "image" command.'),
           })
-          .demandCommand()
+          .demandCommand(1, 'Please provide a command.')
           .onFinishCommand(resolve)
           .argv;
       });
