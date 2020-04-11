@@ -64,6 +64,8 @@ export class ConfigManager {
   }
 
   getTypes() {
+    checkTypeConfigFormat(this.config.types);
+
     if (this.config.types === undefined) {
       return [];
     }
