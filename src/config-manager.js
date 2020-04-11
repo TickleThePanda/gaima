@@ -10,14 +10,10 @@ export class ConfigManager {
   }
 
   getType(aspectRatio) {
+    checkTypeConfigFormat(this.config.types);
 
     if (this.config.types === undefined) {
       return undefined;
-    }
-    if (!Array.isArray(this.config.types)) {
-      throw new ConfigError(
-        `Unrecognised config format "types" was ${typeof this.config.types}, not array`
-      );
     }
 
     return this.config.types
@@ -26,17 +22,17 @@ export class ConfigManager {
   }
 
   addType(aspectRatio, sizes) {
+    checkTypeConfigFormat(this.config.types);
+
     if (this.getType(aspectRatio) !== undefined) {
-      throw new ConfigError('Aspect ratio ' + arName + ' already exists');
+      throw new ConfigError(`Type "${arName}" already exists`);
     }
 
     this.setType(aspectRatio, sizes);
   }
 
   setType(aspectRatio, sizes) {
-    if (!Array.isArray(this.config.types)) {
-      this.config.types = [];
-    }
+    checkTypeConfigFormat(this.config.types);
 
     const newAspectRatio = { aspectRatio, sizes };
 
@@ -50,17 +46,16 @@ export class ConfigManager {
   }
 
   removeType(aspectRatio) {
+    checkTypeConfigFormat(this.config.types);
+
     if (this.config.types === undefined) {
       throw new ConfigError("No types to delete");
-    }
-    if (!Array.isArray(this.config.types)) {
-      throw new ConfigError(`Unrecognised config format "types" was ${typeof this.config.types}, not array`)
     }
 
     const typeToRemove = this.getType(aspectRatio);
 
     if (typeToRemove === undefined) {
-      throw new ConfigError(`Type ${aspectRatio} could not be found`);
+      throw new ConfigError(`Type "${aspectRatio}" could not be found`);
     }
 
     this.config.types = this.config.types.filter(
@@ -73,5 +68,15 @@ export class ConfigManager {
       return [];
     }
     return this.config.types;
+  }
+}
+
+function checkTypeConfigFormat(types) {
+  if (types === undefined) {
+    return;
+  } else if (!Array.isArray(types)) {
+    throw new ConfigError(
+      `Unrecognised config format. "types" was of type "${typeof types}", not "array"`
+    );
   }
 }
