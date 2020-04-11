@@ -4,7 +4,7 @@ import { GaimaApp } from './app.js';
 import { GaimaCli } from './cli.js';
 
 import { ConfigStore } from './config-store.js';
-import { ConfigManager } from './config-manager.js';
+import { ConfigManager, ConfigError } from './config-manager.js';
 
 const CONFIG_FILE_NAME = 'gaima.json';
 
@@ -21,7 +21,13 @@ async function run() {
   try {
     await cli.run();
     success = true;
-  } catch (_) {
+  } catch (e) {
+    if (e instanceof ConfigError) {
+      console.log('Error: ' + e.message);
+    } else {
+      console.error('Gaima encountered an internal error.')
+      console.error(e);
+    }
     success = false;
   }
 
