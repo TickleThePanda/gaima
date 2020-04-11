@@ -58,17 +58,20 @@ export class GaimaCli {
               command: 'create <name>',
               desc: 'Creates a new gallery',
               builder: (yargs) => yargs
-                .option('description')
+                .option('description'),
+              handler: args => this.app.gallery.create(args)
             })
             .command({
               command: 'list',
               desc: 'List the galleries',
               builder: (yargs) => yargs,
+              handler: args => this.app.gallery.list(args)
             })
             .command({
               command: 'remove <name>',
               desc: 'Remove gallery',
-              builder: (yargs) => yargs
+              builder: (yargs) => yargs,
+              handler: args => this.app.gallery.remove(args)
             })
             .demandCommand(1, 'Please provide a "gallery" command.'),
         })

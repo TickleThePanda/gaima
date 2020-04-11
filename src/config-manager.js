@@ -71,6 +71,63 @@ export class ConfigManager {
     }
     return this.config.types;
   }
+
+  addGallery({
+    name, description
+  }) {
+    checkGalleriesConfigFormat(this.config.galleries);
+
+    if (this.getGallery(name) !== undefined) {
+      throw new ConfigError('Gallery ' + name + ' already exists');
+    }
+
+    if (!Array.isArray(this.config.galleries)) {
+      this.config.galleries = [];
+    }
+
+    const newGallery = { name, description };
+
+    this.config.galleries.push(newGallery);
+  }
+
+  getGallery(name) {
+    checkGalleriesConfigFormat(this.config.galleries);
+
+    if (!Array.isArray(this.config.galleries)) {
+      return undefined;
+    }
+
+    return this.config.galleries.find(g => g.name === name);
+  }
+
+  getGalleries() {
+    checkGalleriesConfigFormat(this.config.galleries);
+
+    if (this.config.galleries === undefined) {
+      return [];
+    }
+    return this.config.galleries;
+  }
+
+  removeGallery({name}) {
+    checkGalleriesConfigFormat(this.config.galleries);
+
+    if (this.config.galleries === undefined) {
+      throw new ConfigError("No galleries to delete");
+    }
+
+    const galleryToRemove = this.getGallery(name);
+
+    if (galleryToRemove === undefined) {
+      throw new ConfigError(`Gallery ${name} does not exist so can't be deleted`);
+    }
+
+    this.config.galleries = this.config.galleries.filter(
+      g => !Object.is(g, galleryToRemove)
+    );
+
+  }
+
 }
 
 function checkTypeConfigFormat(types) {
@@ -79,6 +136,16 @@ function checkTypeConfigFormat(types) {
   } else if (!Array.isArray(types)) {
     throw new ConfigError(
       `Unrecognised config format. "types" was of type "${typeof types}", not "array"`
+    );
+  }
+}
+
+function checkGalleriesConfigFormat(galleries) {
+  if (galleries === undefined) {
+    return;
+  } else if (!Array.isArray(galleries)) {
+    throw new ConfigError(
+      `Unrecognised config format. "galleries" was of type "${typeof galleries}", not "array"`
     );
   }
 }
