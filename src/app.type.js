@@ -15,7 +15,7 @@ export class GaimaTypeCommand {
   }
 
   remove({ aspectRatio }) {
-    this.configManager.remove(aspectRatio);
+    this.configManager.removeType(aspectRatio);
   }
 
   list() {
