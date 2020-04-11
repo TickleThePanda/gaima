@@ -16,9 +16,15 @@ export class ConfigManager {
       return undefined;
     }
 
-    return this.config.types
-      .find(t => t.aspectRatio.x === aspectRatio.x
-                && t.aspectRatio.y === aspectRatio.y);
+
+    if (typeof aspectRatio === 'string') {
+      return this.config.types.find(t => t.name === aspectRatio);
+    } else {
+      return this.config.types
+        .find(t => t.aspectRatio.x === aspectRatio.x
+                  && t.aspectRatio.y === aspectRatio.y);
+    }
+
   }
 
   addType(aspectRatio, sizes) {
@@ -34,7 +40,11 @@ export class ConfigManager {
   setType(aspectRatio, sizes) {
     checkTypeConfigFormat(this.config.types);
 
-    const newAspectRatio = { aspectRatio, sizes };
+    const newAspectRatio = {
+      name: `${aspectRatio.x}:${aspectRatio.y}`,
+      aspectRatio,
+      sizes
+    };
 
     const existingAspectRatio = this.getType(aspectRatio);
 
