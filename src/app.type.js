@@ -30,7 +30,7 @@ export class GaimaTypeCommand {
   }
 }
 
-function formatType({ar, sizes}) {
+function formatType({aspectRatio: ar, sizes}) {
   const stringifiedSizes = sizes.map(({x, y}) => x + 'x' + y).join(' ');
   return `${ar.x}:${ar.y} - ${stringifiedSizes} `;
 }
