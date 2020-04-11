@@ -10,8 +10,14 @@ export class ConfigManager {
   }
 
   getType(aspectRatio) {
-    if (this.config.types !== 'array') {
+
+    if (this.config.types === undefined) {
       return undefined;
+    }
+    if (!Array.isArray(this.config.types)) {
+      throw new ConfigError(
+        `Unrecognised config format "types" was ${typeof this.config.types}, not array`
+      );
     }
 
     return this.config.types
@@ -28,7 +34,7 @@ export class ConfigManager {
   }
 
   setType(aspectRatio, sizes) {
-    if (typeof this.config.types !== 'array') {
+    if (!Array.isArray(this.config.types)) {
       this.config.types = [];
     }
 
@@ -44,12 +50,21 @@ export class ConfigManager {
   }
 
   removeType(aspectRatio) {
+    if (this.config.types === undefined) {
+      throw new ConfigError("No types to delete");
+    }
     if (!Array.isArray(this.config.types)) {
-      return;
+      throw new ConfigError(`Unrecognised config format "types" was ${typeof this.config.types}, not array`)
+    }
+
+    const typeToRemove = this.getType(aspectRatio);
+
+    if (typeToRemove === undefined) {
+      throw new ConfigError(`Type ${aspectRatio} could not be found`);
     }
 
     this.config.types = this.config.types.filter(
-      t => !(t.aspectRatio.x === aspectRatio.x && t.aspectRatio.y === aspectRatio.y)
+      t => Object.is(t, typeToRemove)
     );
   }
 
