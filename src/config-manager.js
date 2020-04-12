@@ -31,7 +31,7 @@ export class ConfigManager {
     checkTypeConfigFormat(this.config.types);
 
     if (this.getType(aspectRatio) !== undefined) {
-      throw new ConfigError(`Type "${arName}" already exists`);
+      throw new ConfigError(`Type "${aspectRatio.x + ":" + aspectRatio.y}" already exists`);
     }
 
     this.setType(aspectRatio, sizes);
@@ -47,6 +47,10 @@ export class ConfigManager {
     };
 
     const existingAspectRatio = this.getType(aspectRatio);
+
+    if (this.config.types === undefined) {
+      this.config.types = [];
+    }
 
     if (existingAspectRatio === undefined) {
       this.config.types.push(newAspectRatio);
