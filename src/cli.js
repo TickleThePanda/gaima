@@ -12,8 +12,7 @@ export class GaimaCli {
     * Wraps this in a promise to handle the onFinishCommand
     * resolution asynchronously to make yargs async.
     */
-    return await new Promise((resolve, reject) => {
-      yargs
+    const args = yargs
         .command({
           command: 'init',
           desc: 'Initialise a gallery. By default, this will ask questions for each of the options.',
@@ -30,8 +29,7 @@ export class GaimaCli {
             .option('description', {
               type: 'string',
               describe: 'The description of the gallery.'
-            }),
-          handler: args => this.app.init.init(args)
+            })
         })
         .command({
           command: 'type',
@@ -40,26 +38,22 @@ export class GaimaCli {
             .command({
               command: 'add <aspect-ratio> <sizes...>',
               desc: 'Add a new image type',
-              builder: yargs => buildTypeSpecifier(yargs),
-              handler: args => this.app.type.add(args)
+              builder: yargs => buildTypeSpecifier(yargs)
             })
             .command({
               command: 'set <aspect-ratio> <sizes...>',
               desc: 'Set the sizes for an image type',
               builder: yargs => buildTypeSpecifier(yargs),
-              handler: args => this.app.type.set(args)
             })
             .command({
               command: 'list',
               desc: 'List image types',
               builder: yargs => yargs,
-              handler: args => this.app.type.list(args)
             })
             .command({
               command: 'remove <aspect-ratio>',
               desc: 'Remove image type',
               builder: yargs => yargs,
-              handler: args => this.app.type.remove(args)
             })
             .demandCommand(1, 'Please provide a "type" command.')
         })
@@ -72,19 +66,16 @@ export class GaimaCli {
               desc: 'Creates a new gallery',
               builder: (yargs) => yargs
                 .option('description'),
-              handler: args => this.app.gallery.create(args)
             })
             .command({
               command: 'list',
               desc: 'List the galleries',
               builder: (yargs) => yargs,
-              handler: args => this.app.gallery.list(args)
             })
             .command({
               command: 'remove <name>',
               desc: 'Remove gallery',
               builder: (yargs) => yargs,
-              handler: args => this.app.gallery.remove(args)
             })
             .demandCommand(1, 'Please provide a "gallery" command.'),
         })
@@ -112,10 +103,56 @@ export class GaimaCli {
         })
         .demandCommand(1, 'Please provide a command.')
         .strict()
-        .onFinishCommand(resolve)
         .argv;
-    });
+
+    return await run(this.app, args);
   }
+}
+
+async function run(app, args) {
+  const COMMAND_HANDLERS = {
+    "init": (args) => app.init.init(args),
+    "type": {
+      "add": (args) => app.type.add(args),
+      "set": (args) => app.type.set(args),
+      "list": (args) => app.type.list(args),
+      "remove": (args) => app.type.remove(args)
+    },
+    "gallery": {
+      "create": (args) => app.gallery.create(args),
+      "list": (args) => app.gallery.list(args),
+      "remove": (args) => app.gallery.remove(args)
+    }
+
+  }
+
+  let providedCommands = Array.from(args._);
+  let commandMap = COMMAND_HANDLERS;
+
+  let fn = null;
+
+  while (providedCommands.length !== 0) {
+    const thisCommand = providedCommands.shift();
+
+    const nextCommandMap = commandMap[thisCommand];
+
+    if (nextCommandMap === undefined) {
+      throw new Error(`Could not find handler for command "${args._.join(' ')}".`)
+    } else if (typeof nextCommandMap === 'object') {
+      commandMap = nextCommandMap;
+    } else if (typeof nextCommandMap === 'function') {
+      fn = nextCommandMap;
+      break;
+    }
+
+  }
+
+  if (fn === null) {
+    throw new Error(`Could not find handler for command "${args._.join(' ')}".`)
+  }
+
+  return await fn(args);
+
 }
 
 function coerceAspectRatio(arg) {
