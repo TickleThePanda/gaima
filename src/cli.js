@@ -84,10 +84,18 @@ export class GaimaCli {
           desc: 'Manage the images in a gallery',
           builder: (yargs) => yargs
             .command({
-              command: 'add <gallery> <image-name> <image-path>',
+              command: 'add <gallery> <image-path>',
               desc: 'Add a new image to a gallery',
               builder: (yargs) => yargs
-                .option('description')
+                .option('name', {
+                  type: 'string',
+                  describe: 'The name of the image. By default, it will be the file basename.'
+                })
+                .option('type', {
+                  type: 'string',
+                  describe: 'The image type to use. By default, this will be inferred by the image dimensions and available types.'
+                })
+                .option('description'),
             })
             .command({
               command: 'list <gallery>',
@@ -122,6 +130,9 @@ async function run(app, args) {
       "create": (args) => app.gallery.create(args),
       "list": (args) => app.gallery.list(args),
       "remove": (args) => app.gallery.remove(args)
+    },
+    "image": {
+      "add": (args) => app.image.add(args)
     }
 
   }

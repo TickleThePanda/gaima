@@ -23,6 +23,8 @@ export class GaimaInitCommand {
   }) {
     const directoryName = path.basename(process.cwd());
 
+    await this.configManager.objectStore.setup();
+
     if (quiet) {
 
       Object.assign(this.configManager.config, {

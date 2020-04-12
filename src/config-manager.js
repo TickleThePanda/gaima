@@ -5,8 +5,9 @@ export class ConfigError extends Error {
 }
 
 export class ConfigManager {
-  constructor (config) {
+  constructor (config, objectStore) {
     this.config = config;
+    this.objectStore = objectStore;
   }
 
   getType(aspectRatio) {
@@ -79,7 +80,6 @@ export class ConfigManager {
 
   getTypes() {
     checkTypeConfigFormat(this.config.types);
-
     if (this.config.types === undefined) {
       return [];
     }
@@ -140,6 +140,53 @@ export class ConfigManager {
       g => !Object.is(g, galleryToRemove)
     );
 
+  }
+
+  async addImage(galleryName, {
+    name, type, buffer, description
+  }) {
+    const hash = await this.objectStore.store(buffer);
+
+    const gallery = this.getGallery(galleryName);
+
+    if (
+      this.getImage(galleryName, { hash }) !== undefined
+        || this.getImage(galleryName, { name }) !== undefined
+    ) {
+      throw new ConfigError(`The image ${name} with hash ${hash} has already been defined in ${galleryName}.`);
+    }
+
+    if (gallery.images === undefined) {
+      gallery.images = [];
+    }
+
+    gallery.images.push({
+      name,
+      hash,
+      description,
+      type
+    });
+  }
+
+  getImage(galleryName, {
+    name, hash
+  }) {
+
+    const gallery = this.getGallery(galleryName);
+
+    const galleryImages = gallery.images;
+
+    if (!Array.isArray(galleryImages)) {
+      return undefined;
+    }
+
+    if (name !== undefined) {
+      return galleryImages.find(i => i.name === name);
+    } else if (hash !== undefined) {
+      return galleryImages.find(i => i.hash === hash)
+    } else {
+      throw new Error('Must either define a name or a hash to find an image.');
+    }
   }
 
 }
