@@ -132,7 +132,8 @@ async function run(app, args) {
       "remove": (args) => app.gallery.remove(args)
     },
     "image": {
-      "add": (args) => app.image.add(args)
+      "add": (args) => app.image.add(args),
+      "list": (args) => app.image.list(args)
     }
 
   }

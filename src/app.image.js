@@ -1,5 +1,6 @@
 import { ConfigError } from "./config-manager.js";
 import { promises as fs, constants } from 'fs';
+import { EOL } from 'os';
 import path from 'path';
 
 import sharp from 'sharp';
@@ -61,6 +62,18 @@ export class GaimaImageCommand {
 
   }
 
+  async list({
+    gallery: galleryName
+  }) {
+    const images = this.configManager.getImages(galleryName);
+
+    console.log(images.map(formatImage).join(EOL));
+  }
+
+}
+
+function formatImage({name, hash, type, description}) {
+  return `${name} - ${hash} - ${type}${description !== undefined ? " - " + description : ""}`
 }
 
 function toPercent(error) {

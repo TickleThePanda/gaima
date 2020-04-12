@@ -189,6 +189,26 @@ export class ConfigManager {
     }
   }
 
+  getImages(galleryName) {
+    const gallery = this.getGallery(galleryName);
+
+    if (gallery === undefined) {
+      throw new ConfigError(
+        `No gallery with name ${galleryName}`
+      );
+    }
+
+    if (gallery.images === undefined) {
+      return [];
+    }
+    if (!Array.isArray(gallery.images)) {
+      throw new ConfigError(
+        `Unrecognised config format. "gallery.images" was of type "${typeof types}", not "array"`
+      );
+    }
+    return gallery.images;
+  }
+
 }
 
 function checkTypeConfigFormat(types) {
