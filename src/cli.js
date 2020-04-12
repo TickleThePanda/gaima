@@ -111,7 +111,7 @@ export class GaimaCli {
             .demandCommand(1, 'Please provide an "image" command.'),
         })
         .demandCommand(1, 'Please provide a command.')
-        .strictCommands()
+        .strict()
         .onFinishCommand(resolve)
         .argv;
     });
