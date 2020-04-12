@@ -16,29 +16,42 @@ export class GaimaInitCommand {
     this.configManager = configManager;
   }
 
-  async init() {
-    const enquirer = new Enquirer();
-
+  async init({
+    quiet,
+    name,
+    description
+  }) {
     const directoryName = path.basename(process.cwd());
 
-    const questions = [
-      {
-        type: 'input',
-        name: 'name',
-        message: 'name',
-        initial: findFirstNonNull([this.configManager.config.name, directoryName])
-      },
-      {
-        type: 'input',
-        name: 'description',
-        message: 'description',
-        initial: this.configManager.config.description
-      }
-    ];
+    if (quiet) {
 
-    const answers = await enquirer.prompt(questions);
+      Object.assign(this.configManager.config, {
+        name: findFirstNonNull([name, this.configManager.config.name, directoryName]),
+        description: findFirstNonNull([description, this.configManager.config.description])
+      })
+    } else {
+      const enquirer = new Enquirer();
 
-    Object.assign(this.configManager.config, answers)
+      const questions = [
+        {
+          type: 'input',
+          name: 'name',
+          message: 'name',
+          initial: findFirstNonNull([name, this.configManager.config.name, directoryName])
+        },
+        {
+          type: 'input',
+          name: 'description',
+          message: 'description',
+          initial: findFirstNonNull([description, this.configManager.config.description])
+        }
+      ];
+
+      const answers = await enquirer.prompt(questions);
+
+      Object.assign(this.configManager.config, answers)
+
+    }
 
   }
 

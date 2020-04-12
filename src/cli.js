@@ -17,7 +17,20 @@ export class GaimaCli {
         .command({
           command: 'init',
           desc: 'Initialise a gallery',
-          builder: yargs => yargs,
+          builder: yargs => yargs
+            .option('quiet', {
+              type: 'boolean',
+              describe: 'When set, the ',
+              default: false
+            })
+            .option('name', {
+              type: 'string',
+              describe: 'The name of the gallery. If not specified, the directory name will be used.'
+            })
+            .option('description', {
+              type: 'string',
+              describe: 'The description of the gallery.'
+            }),
           handler: args => this.app.init.init(args)
         })
         .command({
