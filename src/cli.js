@@ -16,11 +16,11 @@ export class GaimaCli {
       yargs
         .command({
           command: 'init',
-          desc: 'Initialise a gallery',
+          desc: 'Initialise a gallery. By default, this will ask questions for each of the options.',
           builder: yargs => yargs
             .option('quiet', {
               type: 'boolean',
-              describe: 'When set, the ',
+              describe: 'When set, the tool will not ask questons for each of the options.',
               default: false
             })
             .option('name', {
