@@ -17,6 +17,7 @@ export class GaimaImageCommand {
     imagePath,
     name: imageName,
     description: imageDescription,
+    alt: alt,
     type: typeName
   }) {
     const gallery = this.configManager.getGallery(galleryName);
@@ -57,7 +58,8 @@ export class GaimaImageCommand {
       name: actualImageName,
       type: type.name,
       buffer: imageBuffer,
-      description: imageDescription
+      description: imageDescription,
+      alt: alt
     });
 
   }

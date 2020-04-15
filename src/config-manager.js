@@ -143,7 +143,7 @@ export class ConfigManager {
   }
 
   async addImage(galleryName, {
-    name, type, buffer, description
+    name, type, buffer, description, alt
   }) {
     const hash = await this.objectStore.store(buffer);
 
@@ -165,7 +165,8 @@ export class ConfigManager {
       name,
       hash,
       description,
-      type
+      type,
+      alt
     });
   }
 

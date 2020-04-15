@@ -95,7 +95,15 @@ export class GaimaCli {
                   type: 'string',
                   describe: 'The image type to use. By default, this will be inferred by the image dimensions and available types.'
                 })
-                .option('description'),
+                .option('description', {
+                  type: 'string',
+                  describe: 'The description of the image used to give any background information about the image.'
+                })
+                .option('alt', {
+                  type: 'string',
+                  describe: 'An alternative description for if the image fails to load in the gallery or for screen reader users.',
+                  require: true
+                }),
             })
             .command({
               command: 'list <gallery>',
