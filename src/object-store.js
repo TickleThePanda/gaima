@@ -44,6 +44,7 @@ export class ObjectStore {
   }
 
   async get(hash) {
-
+    const inPath = path.join(this.location, OBJECTS_DIR, hash);
+    return await fs.readFile(inPath);
   }
 }

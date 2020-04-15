@@ -2,6 +2,7 @@ import { GaimaInitCommand } from './app.init.js';
 import { GaimaTypeCommand } from './app.type.js';
 import { GaimaGalleryCommand } from './app.gallery.js';
 import { GaimaImageCommand } from './app.image.js';
+import { GaimaBuildCommand } from './app.build.js';
 
 export class GaimaApp {
 
@@ -10,6 +11,7 @@ export class GaimaApp {
     this.type = new GaimaTypeCommand(configManager);
     this.gallery = new GaimaGalleryCommand(configManager);
     this.image = new GaimaImageCommand(configManager);
+    this.build = new GaimaBuildCommand(configManager);
   }
 
 }
