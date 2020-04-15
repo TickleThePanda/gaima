@@ -51,7 +51,7 @@ export class GaimaImageCommand {
 
     const actualImageName = isImageSpecified
       ? imageName
-      : path.basename(imagePath);
+      : path.basename(imagePath, path.extname(imagePath));
 
     await this.configManager.addImage(galleryName, {
       name: actualImageName,
