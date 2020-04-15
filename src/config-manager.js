@@ -149,11 +149,12 @@ export class ConfigManager {
 
     const gallery = this.getGallery(galleryName);
 
-    if (
-      this.getImage(galleryName, { hash }) !== undefined
-        || this.getImage(galleryName, { name }) !== undefined
-    ) {
-      throw new ConfigError(`The image ${name} with hash ${hash} has already been defined in ${galleryName}.`);
+    if (this.getImage(galleryName, { hash }) !== undefined) {
+      throw new ConfigError(`There is already an image with the hash ${hash} in the gallery ${galleryName}.`);
+    }
+
+    if (this.getImage(galleryName, { name }) !== undefined) {
+      throw new ConfigError(`There is already an image with the name ${name} in the gallery ${galleryName}.`);
     }
 
     if (gallery.images === undefined) {
