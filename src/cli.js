@@ -30,6 +30,10 @@ export class GaimaCli {
               type: 'string',
               describe: 'The description of the gallery.'
             })
+            .option('build-dir', {
+              type: 'string',
+              describe: 'The build directory. This can be relative to the current directory.'
+            })
         })
         .command({
           command: 'type',
@@ -117,6 +121,11 @@ export class GaimaCli {
             })
             .demandCommand(1, 'Please provide an "image" command.'),
         })
+        .command({
+          command: 'build',
+          desc: 'Builds the gallery',
+          builder: (yargs) => yargs
+        })
         .demandCommand(1, 'Please provide a command.')
         .strict()
         .argv;
@@ -143,9 +152,9 @@ async function run(app, args) {
       "add": (args) => app.image.add(args),
       "list": (args) => app.image.list(args),
       "remove": (args) => app.image.remove(args)
-    }
-
-  }
+    },
+    "build": (args) => app.build.build(args)
+  };
 
   let providedCommands = Array.from(args._);
   let commandMap = COMMAND_HANDLERS;

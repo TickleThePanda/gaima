@@ -11,6 +11,8 @@ function findFirstNonNull(items) {
   return null;
 }
 
+const INITIAL_BUILD_DIR = 'dist';
+
 export class GaimaInitCommand {
   constructor(configManager) {
     this.configManager = configManager;
@@ -19,7 +21,8 @@ export class GaimaInitCommand {
   async init({
     quiet,
     name,
-    description
+    description,
+    buildDir
   }) {
     const directoryName = path.basename(process.cwd());
 
@@ -29,7 +32,8 @@ export class GaimaInitCommand {
 
       Object.assign(this.configManager.config, {
         name: findFirstNonNull([name, this.configManager.config.name, directoryName]),
-        description: findFirstNonNull([description, this.configManager.config.description])
+        description: findFirstNonNull([description, this.configManager.config.description]),
+        buildDir: findFirstNonNull([buildDir, this.configManager.config.buildDir, INITIAL_BUILD_DIR])
       })
     } else {
       const enquirer = new Enquirer();
@@ -46,6 +50,12 @@ export class GaimaInitCommand {
           name: 'description',
           message: 'description',
           initial: findFirstNonNull([description, this.configManager.config.description])
+        },
+        {
+          type: 'input',
+          name: 'buildDir',
+          message: 'build-dir',
+          initial: findFirstNonNull([buildDir, this.configManager.config.buildDir, INITIAL_BUILD_DIR])
         }
       ];
 
