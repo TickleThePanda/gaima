@@ -209,6 +209,28 @@ export class ConfigManager {
     return gallery.images;
   }
 
+  removeImage(galleryName, {
+    name
+  }) {
+    const gallery = this.getGallery(galleryName);
+
+    if (gallery === undefined) {
+      throw new ConfigError(
+        `No gallery with name ${galleryName}`
+      );
+    }
+
+    const image = this.getImage(galleryName, {
+      name: name
+    });
+
+    if (image === undefined) {
+      throw new ConfigError(`No image with name ${name} in ${galleryName}`);
+    }
+
+    gallery.images = gallery.images.filter(i => !Object.is(i, image));
+  }
+
 }
 
 function checkTypeConfigFormat(types) {

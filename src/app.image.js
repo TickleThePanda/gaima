@@ -70,6 +70,15 @@ export class GaimaImageCommand {
     console.log(images.map(formatImage).join(EOL));
   }
 
+  async remove({
+    gallery: galleryName,
+    imageName: imageName
+  }) {
+    await this.configManager.removeImage(galleryName, {
+      name: imageName
+    })
+  }
+
 }
 
 function formatImage({name, hash, type, description}) {
