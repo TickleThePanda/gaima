@@ -73,6 +73,7 @@ export class GaimaBuildCommand {
   }
 
   async build(args) {
+
     const buildDir = this.configManager.config.buildDir;
 
     const galleries = this.configManager.getGalleries();
@@ -98,6 +99,7 @@ export class GaimaBuildCommand {
       const images = this.configManager.getImages(gallery.name);
 
       for (let image of images) {
+        console.log(`Generating "${image.name}" of "${gallery.name}"`)
         const buffer = await this.configManager.objectStore.get(image.hash);
         const imageMetadata = await sharp(buffer).metadata();
         const sluggedImageName = slugify(image.name).toLocaleLowerCase();
