@@ -82,13 +82,14 @@ export class GaimaBuildCommand {
     });
 
     for (let gallery of galleries) {
+      const slugifiedGalleryName = slugify(gallery.name).toLowerCase();
       descriptorBuilder.addGallery({
         name: gallery.name,
         description: gallery.description
       })
 
-      const galleryBuildDir = path.join(buildDir, gallery.name);
-      const galleryUrl = gallery.name;
+      const galleryBuildDir = path.join(buildDir, slugifiedGalleryName);
+      const galleryUrl = slugifiedGalleryName;
 
       await fs.mkdir(galleryBuildDir, {
         recursive: true
