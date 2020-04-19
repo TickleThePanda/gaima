@@ -40,13 +40,13 @@ class DescriptorBuilder {
   }
 
   addImage({
-    name, description, originalImageUrl
+    name, description, alt, originalImageUrl
   }) {
     if (this.gallery === null) {
       throw new Error('To add an image, you must add a gallery first.')
     }
     const image = {
-      name, description, originalImageUrl,
+      name, description, alt, originalImageUrl,
       sizes: []
     }
     this.gallery.images.push(image)
