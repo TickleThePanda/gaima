@@ -1,9 +1,12 @@
-import { promises as fs } from 'fs';
+import { promises as fs, constants as fsConstants} from 'fs';
 import path from 'path';
 
 import sharp from 'sharp';
 import slugify from 'slugify';
 
+const OUTPUT_TYPES = [
+  'webp', 'jpeg'
+];
 
 /**
  * This is a stateful builder that will add a gallery, image,
@@ -54,13 +57,13 @@ class DescriptorBuilder {
   }
 
   addSize({
-    x, y, url
+    x, y, type, url
   }) {
     if (this.image === null) {
       throw new Error('To add a size, you must add an image first.');
     }
     const size = {
-      x, y, url
+      x, y, type, url
     }
 
     this.image.sizes.push(size);
@@ -111,7 +114,11 @@ export class GaimaBuildCommand {
 
         const filePathOriginal = path.join(galleryBuildDir, fileNameOriginal);
 
-        await fs.writeFile(filePathOriginal, buffer);
+        if (!fileExists(filePathOriginal)) {
+          await fs.writeFile(filePathOriginal, buffer);
+        } else {
+          console.log(`Skipping ${filePathOriginal}`);
+        }
 
         const imageType = this.configManager.getType(image.type);
 
@@ -124,25 +131,44 @@ export class GaimaBuildCommand {
 
         for (let size of imageType.sizes) {
 
-          const resizedBuffer = await sharp(buffer)
-            .resize(size.x, size.y)
-            .toFormat('jpeg')
-            .toBuffer();
+          for (let type of OUTPUT_TYPES) {
 
-          const fileNameSize = sluggedImageName + '_' + size.x + 'x' + size.y + '.' + extension;
+            const fileNameSize = sluggedImageName + '_' + size.x + 'x' + size.y + '.' + type;
 
-          const filePathSize = path.join(galleryBuildDir, fileNameSize);
+            const filePathSize = path.join(galleryBuildDir, fileNameSize);
 
-          descriptorBuilder.addSize({
-            x: size.x, y: size.y,
-            url: galleryUrl + '/' + fileNameSize
-          })
+            descriptorBuilder.addSize({
+              x: size.x, y: size.y,
+              type: type,
+              url: galleryUrl + '/' + fileNameSize
+            })
 
-          await fs.writeFile(filePathSize, resizedBuffer);
+            if (!fileExists(filePathSize)) {
+              const resizedBuffer = await sharp(buffer)
+                .resize(size.x, size.y)
+                .toFormat(type)
+                .toBuffer();
+
+              await fs.writeFile(filePathSize, resizedBuffer);
+            } else {
+              console.log(`Skipping ${filePathSize}`);
+            }
+          }
+
         }
-
       }
     }
     await fs.writeFile(path.join(buildDir, 'galleries.json'), JSON.stringify(descriptorBuilder.descriptor, null, 2));
   }
+}
+
+async function fileExists(path) {
+
+  try {
+    await fs.access(path, fsConstants.F_OK);
+    return true;
+  } catch (e) {
+    return false;
+  }
+
 }
