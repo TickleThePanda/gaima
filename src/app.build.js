@@ -28,10 +28,10 @@ class DescriptorBuilder {
   }
 
   addGallery({
-    name, description
+    name, ref, description
   }) {
     const gallery = {
-      name, description,
+      name, ref, description,
       images: []
     };
     this.descriptor.galleries.push(gallery);
@@ -86,6 +86,7 @@ export class GaimaBuildCommand {
       const slugifiedGalleryName = slugify(gallery.name).toLowerCase();
       descriptorBuilder.addGallery({
         name: gallery.name,
+        ref: slugifiedGalleryName,
         description: gallery.description
       })
 
