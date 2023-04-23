@@ -1,9 +1,9 @@
 import { ConfigError } from "./config-manager.js";
-import { promises as fs, constants } from 'fs';
-import { EOL } from 'os';
-import path from 'path';
+import { promises as fs, constants } from "fs";
+import { EOL } from "os";
+import path from "path";
 
-import sharp from 'sharp';
+import sharp from "sharp";
 
 const AR_ERROR_WARNING_MIN = 0.001;
 
@@ -18,12 +18,15 @@ export class GaimaImageCommand {
     name: imageName,
     description: imageDescription,
     alt: alt,
-    type: typeName
+    type: typeName,
+    overwrite,
   }) {
     const gallery = this.configManager.getGallery(galleryName);
 
     if (gallery === undefined) {
-      throw new ConfigError(`Could not add image to ${galleryName}: the gallery doesn't exist.`);
+      throw new ConfigError(
+        `Could not add image to ${galleryName}: the gallery doesn't exist.`
+      );
     }
 
     const imageBuffer = await getImageContent(imagePath);
@@ -31,21 +34,24 @@ export class GaimaImageCommand {
 
     const isTypeSpecified = typeName !== undefined;
 
-    const type = await (
-      isTypeSpecified
-        ? this.configManager.getType(typeName)
-        : inferTypeFromDimensions(this.configManager.getTypes(), imageMetadata)
-    );
+    const type = await (isTypeSpecified
+      ? this.configManager.getType(typeName)
+      : inferTypeFromDimensions(this.configManager.getTypes(), imageMetadata));
 
     const imageArFraction = imageMetadata.width / imageMetadata.height;
     const typeArFraction = type.aspectRatio.x / type.aspectRatio.y;
 
-    const error = Math.abs((imageArFraction - typeArFraction) * imageArFraction);
+    const error = Math.abs(
+      (imageArFraction - typeArFraction) * imageArFraction
+    );
 
     if (error > AR_ERROR_WARNING_MIN) {
       console.log(
-        `Warning: Using the aspect ratio ${type.name} but the`
-        + `percentage error between selected aspect ratio and actual aspect ratio is ${toPercent(error)} `)
+        `Warning: Using the aspect ratio ${type.name} but the` +
+          `percentage error between selected aspect ratio and actual aspect ratio is ${toPercent(
+            error
+          )} `
+      );
     }
 
     const isImageSpecified = imageName !== undefined;
@@ -59,42 +65,39 @@ export class GaimaImageCommand {
       type: type.name,
       buffer: imageBuffer,
       description: imageDescription,
-      alt: alt
+      alt: alt,
+      overwrite,
     });
-
   }
 
-  async list({
-    gallery: galleryName
-  }) {
+  async list({ gallery: galleryName }) {
     const images = this.configManager.getImages(galleryName);
 
     console.log(images.map(formatImage).join(EOL));
   }
 
-  async remove({
-    gallery: galleryName,
-    imageName: imageName
-  }) {
+  async remove({ gallery: galleryName, imageName: imageName }) {
     await this.configManager.removeImage(galleryName, {
-      name: imageName
-    })
+      name: imageName,
+    });
   }
-
 }
 
-function formatImage({name, hash, type, description}) {
-  return `${name} - ${hash} - ${type}${description !== undefined ? " - " + description : ""}`
+function formatImage({ name, hash, type, description }) {
+  return `${name} - ${hash} - ${type}${
+    description !== undefined ? " - " + description : ""
+  }`;
 }
 
 function toPercent(error) {
-  return `${(error * 100).toFixed(1)}%`
+  return `${(error * 100).toFixed(1)}%`;
 }
 
 async function inferTypeFromDimensions(types, imageMetadata) {
-
   if (types.length === 0) {
-    throw new ConfigError(`Could not infer dimension. There are no types specified.`);
+    throw new ConfigError(
+      `Could not infer dimension. There are no types specified.`
+    );
   }
 
   const arFraction = imageMetadata.width / imageMetadata.height;
@@ -103,14 +106,14 @@ async function inferTypeFromDimensions(types, imageMetadata) {
 }
 
 function findClosestMatchingAr(types, aspectRatioFraction) {
-
   let typeWithClosestRatio = null;
 
   for (let type of types) {
     if (typeWithClosestRatio === null) {
       typeWithClosestRatio = type;
     } else {
-      const closestRatio = typeWithClosestRatio.aspectRatio.x / typeWithClosestRatio.aspectRatio.y;
+      const closestRatio =
+        typeWithClosestRatio.aspectRatio.x / typeWithClosestRatio.aspectRatio.y;
       const closestRatioDiff = Math.abs(closestRatio - aspectRatioFraction);
 
       const thisRatio = type.aspectRatio.x / type.aspectRatio.y;
@@ -123,13 +126,10 @@ function findClosestMatchingAr(types, aspectRatioFraction) {
   }
 
   return typeWithClosestRatio;
-
 }
 
 async function getImageContent(imagePath) {
-
   const imageFileHandle = await fs.open(imagePath, constants.O_RDONLY);
 
   return await imageFileHandle.readFile(imageFileHandle);
-
 }

@@ -1,11 +1,11 @@
 export class ConfigError extends Error {
-  constructor (message) {
+  constructor(message) {
     super(message);
   }
 }
 
 export class ConfigManager {
-  constructor (config, objectStore) {
+  constructor(config, objectStore) {
     this.config = config;
     this.objectStore = objectStore;
   }
@@ -17,22 +17,23 @@ export class ConfigManager {
       return undefined;
     }
 
-
-    if (typeof aspectRatio === 'string') {
-      return this.config.types.find(t => t.name === aspectRatio);
+    if (typeof aspectRatio === "string") {
+      return this.config.types.find((t) => t.name === aspectRatio);
     } else {
-      return this.config.types
-        .find(t => t.aspectRatio.x === aspectRatio.x
-                  && t.aspectRatio.y === aspectRatio.y);
+      return this.config.types.find(
+        (t) =>
+          t.aspectRatio.x === aspectRatio.x && t.aspectRatio.y === aspectRatio.y
+      );
     }
-
   }
 
   addType(aspectRatio, sizes) {
     checkTypeConfigFormat(this.config.types);
 
     if (this.getType(aspectRatio) !== undefined) {
-      throw new ConfigError(`Type "${aspectRatio.x + ":" + aspectRatio.y}" already exists`);
+      throw new ConfigError(
+        `Type "${aspectRatio.x + ":" + aspectRatio.y}" already exists`
+      );
     }
 
     this.setType(aspectRatio, sizes);
@@ -44,7 +45,7 @@ export class ConfigManager {
     const newAspectRatio = {
       name: `${aspectRatio.x}:${aspectRatio.y}`,
       aspectRatio,
-      sizes
+      sizes,
     };
 
     const existingAspectRatio = this.getType(aspectRatio);
@@ -73,8 +74,8 @@ export class ConfigManager {
       throw new ConfigError(`Type "${aspectRatio}" could not be found`);
     }
 
-    this.config.types = this.config.types.filter(
-      t => Object.is(t, typeToRemove)
+    this.config.types = this.config.types.filter((t) =>
+      Object.is(t, typeToRemove)
     );
   }
 
@@ -86,13 +87,11 @@ export class ConfigManager {
     return this.config.types;
   }
 
-  addGallery({
-    name, description
-  }) {
+  addGallery({ name, description }) {
     checkGalleriesConfigFormat(this.config.galleries);
 
     if (this.getGallery(name) !== undefined) {
-      throw new ConfigError('Gallery ' + name + ' already exists');
+      throw new ConfigError("Gallery " + name + " already exists");
     }
 
     if (!Array.isArray(this.config.galleries)) {
@@ -104,6 +103,18 @@ export class ConfigManager {
     this.config.galleries.push(newGallery);
   }
 
+  setGallery(name, { description }) {
+    checkGalleriesConfigFormat(this.config.galleries);
+
+    const gallery = this.getGallery(name);
+
+    if (!gallery) {
+      this.addGallery({ name, description });
+    } else {
+      gallery.description = description;
+    }
+  }
+
   getGallery(name) {
     checkGalleriesConfigFormat(this.config.galleries);
 
@@ -111,7 +122,7 @@ export class ConfigManager {
       return undefined;
     }
 
-    return this.config.galleries.find(g => g.name === name);
+    return this.config.galleries.find((g) => g.name === name);
   }
 
   getGalleries() {
@@ -123,7 +134,7 @@ export class ConfigManager {
     return this.config.galleries;
   }
 
-  removeGallery({name}) {
+  removeGallery({ name }) {
     checkGalleriesConfigFormat(this.config.galleries);
 
     if (this.config.galleries === undefined) {
@@ -133,47 +144,56 @@ export class ConfigManager {
     const galleryToRemove = this.getGallery(name);
 
     if (galleryToRemove === undefined) {
-      throw new ConfigError(`Gallery ${name} does not exist so can't be deleted`);
+      throw new ConfigError(
+        `Gallery ${name} does not exist so can't be deleted`
+      );
     }
 
     this.config.galleries = this.config.galleries.filter(
-      g => !Object.is(g, galleryToRemove)
+      (g) => !Object.is(g, galleryToRemove)
     );
-
   }
 
-  async addImage(galleryName, {
-    name, type, buffer, description, alt
-  }) {
+  async addImage(
+    galleryName,
+    { name, type, buffer, description, alt, overwrite }
+  ) {
     const hash = await this.objectStore.store(buffer);
 
     const gallery = this.getGallery(galleryName);
 
-    if (this.getImage(galleryName, { hash }) !== undefined) {
-      throw new ConfigError(`There is already an image with the hash ${hash} in the gallery ${galleryName}.`);
-    }
+    const existingImage = this.getImage(galleryName, { hash });
 
-    if (this.getImage(galleryName, { name }) !== undefined) {
-      throw new ConfigError(`There is already an image with the name ${name} in the gallery ${galleryName}.`);
+    const hasExistingImage = existingImage !== undefined;
+
+    if (hasExistingImage && !overwrite) {
+      throw new ConfigError(
+        `There is already an image with the hash ${hash} in the gallery ${galleryName}.`
+      );
     }
 
     if (gallery.images === undefined) {
       gallery.images = [];
     }
 
-    gallery.images.push({
-      name,
-      hash,
-      description,
-      type,
-      alt
-    });
+    if (hasExistingImage) {
+      existingImage.name = name;
+      existingImage.hash = hash;
+      existingImage.description = description;
+      existingImage.type = type;
+      existingImage.alt = alt;
+    } else {
+      gallery.images.push({
+        name,
+        hash,
+        description,
+        type,
+        alt,
+      });
+    }
   }
 
-  getImage(galleryName, {
-    name, hash
-  }) {
-
+  getImage(galleryName, { name, hash }) {
     const gallery = this.getGallery(galleryName);
 
     const galleryImages = gallery.images;
@@ -183,11 +203,11 @@ export class ConfigManager {
     }
 
     if (name !== undefined) {
-      return galleryImages.find(i => i.name === name);
+      return galleryImages.find((i) => i.name === name);
     } else if (hash !== undefined) {
-      return galleryImages.find(i => i.hash === hash)
+      return galleryImages.find((i) => i.hash === hash);
     } else {
-      throw new Error('Must either define a name or a hash to find an image.');
+      throw new Error("Must either define a name or a hash to find an image.");
     }
   }
 
@@ -195,9 +215,7 @@ export class ConfigManager {
     const gallery = this.getGallery(galleryName);
 
     if (gallery === undefined) {
-      throw new ConfigError(
-        `No gallery with name ${galleryName}`
-      );
+      throw new ConfigError(`No gallery with name ${galleryName}`);
     }
 
     if (gallery.images === undefined) {
@@ -211,28 +229,23 @@ export class ConfigManager {
     return gallery.images;
   }
 
-  removeImage(galleryName, {
-    name
-  }) {
+  removeImage(galleryName, { name }) {
     const gallery = this.getGallery(galleryName);
 
     if (gallery === undefined) {
-      throw new ConfigError(
-        `No gallery with name ${galleryName}`
-      );
+      throw new ConfigError(`No gallery with name ${galleryName}`);
     }
 
     const image = this.getImage(galleryName, {
-      name: name
+      name: name,
     });
 
     if (image === undefined) {
       throw new ConfigError(`No image with name ${name} in ${galleryName}`);
     }
 
-    gallery.images = gallery.images.filter(i => !Object.is(i, image));
+    gallery.images = gallery.images.filter((i) => !Object.is(i, image));
   }
-
 }
 
 function checkTypeConfigFormat(types) {

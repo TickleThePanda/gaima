@@ -1,13 +1,14 @@
-import { EOL } from 'os';
+import { EOL } from "os";
 
 export class GaimaGalleryCommand {
   constructor(configManager) {
     this.configManager = configManager;
   }
 
-  create({name, description}) {
+  create({ name, description }) {
     this.configManager.addGallery({
-      name, description
+      name,
+      description,
     });
   }
 
@@ -15,16 +16,19 @@ export class GaimaGalleryCommand {
     const galleries = this.configManager.getGalleries();
 
     console.log(galleries.map(formatGallery).join(EOL));
-
   }
 
-  remove({name}) {
-    this.configManager.removeGallery({name});
+  set({ name, description }) {
+    this.configManager.setGallery(name, {
+      description,
+    });
+  }
+
+  remove({ name }) {
+    this.configManager.removeGallery({ name });
   }
 }
 
-function formatGallery({name, description}) {
-  return description !== undefined
-    ? `${name} - ${description}`
-    : `${name}`;
+function formatGallery({ name, description }) {
+  return description !== undefined ? `${name} - ${description}` : `${name}`;
 }

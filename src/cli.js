@@ -80,6 +80,11 @@ export class GaimaCli {
               builder: (yargs) => yargs,
             })
             .command({
+              command: "set <name>",
+              desc: "List the galleries",
+              builder: (yargs) => yargs.option("description"),
+            })
+            .command({
               command: "remove <name>",
               desc: "Remove gallery",
               builder: (yargs) => yargs,
@@ -116,6 +121,10 @@ export class GaimaCli {
                     describe:
                       "An alternative description for if the image fails to load in the gallery or for screen reader users.",
                     require: true,
+                  })
+                  .option("overwrite", {
+                    type: "boolean",
+                    describe: "Overwrite an existing image",
                   }),
             })
             .command({
@@ -153,6 +162,7 @@ async function run(app, args) {
     },
     gallery: {
       create: (args) => app.gallery.create(args),
+      set: (args) => app.gallery.set(args),
       list: (args) => app.gallery.list(args),
       remove: (args) => app.gallery.remove(args),
     },

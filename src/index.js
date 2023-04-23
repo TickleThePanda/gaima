@@ -12,7 +12,6 @@ const CONFIG_FILE_NAME = 'gaima.json';
 const store = new ConfigStore(CONFIG_FILE_NAME);
 const objectStore = new ObjectStore('.gaima/');
 
-
 async function run() {
 
   const configManager = new ConfigManager(await store.load(), objectStore);
