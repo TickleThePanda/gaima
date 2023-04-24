@@ -4,6 +4,8 @@ import path from "path";
 import sharp from "sharp";
 import slugify from "slugify";
 
+import { XMLParser } from "fast-xml-parser";
+
 const OUTPUT_TYPES = ["webp", "jpeg"];
 
 /**
@@ -44,6 +46,7 @@ class DescriptorBuilder {
     description,
     favourite,
     alt,
+    meta,
     originalImageUrl,
     aspectRatio,
   }) {
@@ -55,6 +58,7 @@ class DescriptorBuilder {
       description,
       favourite,
       alt,
+      meta,
       originalImageUrl,
       sizes: [],
       aspectRatio,
@@ -113,6 +117,8 @@ export class GaimaBuildCommand {
         console.log(`Generating "${image.name}" of "${gallery.name}"`);
         const buffer = await this.configManager.objectStore.get(image.hash);
         const imageMetadata = await sharp(buffer).metadata();
+
+        const meta = extractFilmInfo(imageMetadata);
         const sluggedImageName = slugify(image.name).toLocaleLowerCase();
 
         const extension = imageMetadata.format;
@@ -133,6 +139,7 @@ export class GaimaBuildCommand {
         descriptorBuilder.addImage({
           name: image.name,
           description: image.description,
+          meta: meta,
           alt: image.alt,
           favourite: image.favourite,
           aspectRatio: {
@@ -176,6 +183,47 @@ export class GaimaBuildCommand {
       JSON.stringify(descriptorBuilder.descriptor, null, 2)
     );
   }
+}
+
+function extractFilmInfo(imageMetadata) {
+  const parser = new XMLParser({
+    removeNSPrefix: true,
+  });
+  if (imageMetadata.xmp !== undefined) {
+    const metadataBuffer = imageMetadata.xmp;
+    const metadataXml = metadataBuffer.toString("ascii");
+    const parsedXmp = parser.parse(metadataXml);
+    return extract(parsedXmp, [
+      "xmpmeta",
+      "RDF",
+      "Description",
+      (v) =>
+        v.reduce((p, c) => {
+          return Object.assign({}, p, c);
+        }, {}),
+      "description",
+      "Alt",
+      "li",
+      (v) => v.replace(/\n.*/g, ""),
+    ]);
+  } else {
+    return undefined;
+  }
+}
+
+function extract(data, path) {
+  let last = data;
+  for (const loc of path) {
+    if (last === undefined) {
+      return undefined;
+    }
+    if (typeof loc === "function") {
+      last = loc(last);
+    } else {
+      last = last[loc];
+    }
+  }
+  return last;
 }
 
 async function fileExists(path) {
