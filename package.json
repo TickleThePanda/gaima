@@ -11,7 +11,7 @@
   "license": "MIT",
   "dependencies": {
     "enquirer": "^2.3.4",
-    "fast-xml-parser": "^4.2.4",
+    "fast-xml-parser": "^4.2.5",
     "sharp": "^0.28.0",
     "slugify": "^1.4.0",
     "yargs": "^15.3.1"
