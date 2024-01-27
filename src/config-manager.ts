@@ -1,4 +1,8 @@
+import path from "path";
 import { ObjectStore } from "./object-store.js";
+import slugify from "@sindresorhus/slugify";
+import sharp from "sharp";
+import { XMLParser } from "fast-xml-parser";
 
 export class ConfigError extends Error {
   constructor(message: string) {
@@ -53,6 +57,8 @@ export type RemoveImageArgs = {
 export type GaimaImageConfig = {
   name: string;
   hash: string;
+  originalFileExtension?: string | undefined;
+  meta?: string | null | undefined;
   type: string;
   alt: string;
   description?: string | undefined;
@@ -362,6 +368,122 @@ export class ConfigManager {
 
     gallery.images = gallery.images?.filter((i) => !Object.is(i, image));
   }
+
+  getAllImageInstances(): ImageInstance[] {
+
+    const imageInstances = [];
+
+    const outputTypes = [sharp.format.webp, sharp.format.jpeg];
+    const galleries = this.getGalleries();
+    for (const gallery of galleries) {
+
+      const images = this.getImages(gallery.name);
+      for (const image of images) {
+
+        const imageType = this.getType(image.type);
+        if (imageType === undefined) {
+          throw new Error(
+            `Can't generate gallery as image type ${image.type} is not defined`
+          );
+        }
+
+        for (const size of imageType.sizes) {
+          for (const type of outputTypes) {
+            imageInstances.push(
+              new ImageInstance(
+                this.config.buildDir, gallery, image, size, type
+              )
+            );
+          }
+        }
+      }
+    }
+    return imageInstances;
+  }
+
+  async upgrade(): Promise<UpgradeResult> {
+    const images = this.getGalleries().flatMap(g => this.getImages(g.name));
+
+    const noFileExtension = images.filter(i => i.originalFileExtension === undefined);
+
+    for (const image of noFileExtension) {
+      const buffer = await this.objectStore.get(image.hash);
+      const metadata = await sharp(buffer).metadata();
+
+      const format = metadata.format;
+
+      image.originalFileExtension = format;
+      
+    }
+
+    const noFilmInfo = images.filter(i => i.meta === undefined);
+
+    for (const image of noFilmInfo) {
+      const buffer = await this.objectStore.get(image.hash);
+      const metadata = await sharp(buffer).metadata();
+      const filmInfo = extractFilmInfo(metadata);
+      image.meta = filmInfo === undefined ? null : filmInfo;
+    }
+
+    return noFileExtension.length > 0 ? UpgradeResult.CHANGES : UpgradeResult.NO_CHANGES;
+  }
+
+}
+
+export enum UpgradeResult {
+  NO_CHANGES,
+  CHANGES
+}
+
+export class ImageInstance {
+  buildDir: string;
+  gallery: GaimaGalleryConfig;
+  image: GaimaImageConfig;
+  size: AspectRatioDimension;
+  fileType: sharp.AvailableFormatInfo;
+
+  constructor(
+    buildDir: string,
+    gallery: GaimaGalleryConfig,
+    image: GaimaImageConfig,
+    size: AspectRatioDimension,
+    fileType: sharp.AvailableFormatInfo,
+  ) {
+    this.buildDir = buildDir;
+    this.gallery = gallery;
+    this.image = image;
+    this.size = size;
+    this.fileType = fileType;
+  }
+
+  getGalleryDirPath(): string {
+    return path.join(this.buildDir, this.getGallerySlug());
+  }
+
+  getGallerySlug(): string {
+    return slugify(this.gallery.name).toLowerCase();
+  }
+
+  getImageSizeName(): string {
+    return this.getImageSlug() + "_" + this.size.x + "x" + this.size.y + "." + this.fileType.id;
+  }
+
+  getImageSizePath(): string {
+    return path.join(this.getGalleryDirPath(), this.getImageSizeName());
+  }
+
+  getImageSlug(): string {
+    return slugify(this.image.name).toLocaleLowerCase();
+  }
+  
+  getOriginalSlugOutputName(): string {
+    return this.getImageSlug() + "_original" + this.image.originalFileExtension;
+  }
+
+  getFilePathOriginal(): string {
+    return path.join(this.getGalleryDirPath(), this.getImageSlug() + "_original." + this.image.originalFileExtension);
+  }
+
 }
 
 function checkTypeConfigFormat(types: unknown) {
@@ -382,4 +504,54 @@ function checkGalleriesConfigFormat(galleries: unknown) {
       `Unrecognised config format. "galleries" was of type "${typeof galleries}", not "array"`
     );
   }
+}
+
+function extractFilmInfo(imageMetadata: sharp.Metadata): string | undefined {
+  const parser = new XMLParser({
+    removeNSPrefix: true,
+  });
+  if (imageMetadata.xmp !== undefined) {
+    const metadataBuffer = imageMetadata.xmp;
+    const metadataXml = metadataBuffer.toString("ascii");
+    const parsedXmp = parser.parse(metadataXml);
+    return extract(parsedXmp, [
+      "xmpmeta",
+      "RDF",
+      "Description",
+      (v: unknown) =>
+        Array.isArray(v) ?
+          v.reduce((p, c) => Object.assign(p, c), {}) : {},
+      "description",
+      "Alt",
+      "li",
+      (v: unknown) => 
+        typeof v === "string" ? v.replace(/\n.*/g, "") : undefined
+    ]);
+  } else {
+    return undefined;
+  }
+}
+
+type ExtractorFunction = (v: unknown) => object | string
+
+function extract(data: object | undefined, path: (string | ExtractorFunction)[]): string | undefined {
+  let last: unknown = data;
+  for (const loc of path) {
+    if (last === undefined) {
+      return undefined;
+    }
+    if (typeof loc === "function") {
+      last = loc(last);
+    } else if (typeof loc === "string" && typeof last === "object") {
+      last = (last as Record<string, unknown>)[loc];
+    } else {
+      return undefined;
+    }
+  }
+  if (typeof last === "string") {
+    return last;
+  } else {
+    return undefined;
+  }
+  
 }

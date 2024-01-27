@@ -2,12 +2,8 @@ import { promises as fs, constants as fsConstants } from "fs";
 import path from "path";
 
 import sharp from "sharp";
-import slugify from "@sindresorhus/slugify";
 
-import { XMLParser } from "fast-xml-parser";
 import { ConfigManager } from "./config-manager.js";
-
-const OUTPUT_TYPES = [sharp.format.webp, sharp.format.jpeg];
 
 export type DescriptorBuilderConstructorOptions = {
   name: string;
@@ -26,7 +22,7 @@ export type ImageDescriptorArgs = {
   favourite: boolean;
   favouriteGallery: string | undefined;
   alt: string;
-  meta: string | undefined;
+  meta: string | null | undefined;
   originalImageUrl: string;
   aspectRatio: {
     x: string;
@@ -59,7 +55,7 @@ export type ImageDescriptor = {
   description: string | undefined;
   favourite: boolean;
   alt: string;
-  meta: string | undefined;
+  meta: string | null | undefined;
   originalImageUrl: string;
   sizes: SizeDescriptor[];
   aspectRatio: {
@@ -163,44 +159,40 @@ export class GaimaBuildCommand {
   }
 
   async build() {
+
+    const store = await this.configManager.objectStore;
     const buildDir = this.configManager.config.buildDir;
 
-    const galleries = this.configManager.getGalleries();
     const descriptorBuilder = new DescriptorBuilder({
       name: this.configManager.config.name,
       description: this.configManager.config.description,
     });
 
-    for (const gallery of galleries) {
-      const slugifiedGalleryName = slugify(gallery.name).toLowerCase();
-      descriptorBuilder.addGallery({
-        name: gallery.name,
-        ref: slugifiedGalleryName,
-        description: gallery.description,
-      });
+    let prevGallery = undefined;
+    let prevImage = undefined;
+    let currentImageBuffer = undefined;
 
-      const galleryBuildDir = path.join(buildDir, slugifiedGalleryName);
-      const galleryUrl = slugifiedGalleryName;
+    for (const inst of this.configManager.getAllImageInstances()) {
+      const galleryUrl = inst.getGallerySlug();
+      if (prevGallery !== inst.gallery) {
+        descriptorBuilder.addGallery({
+          name: inst.gallery.name,
+          ref: galleryUrl,
+          description: inst.gallery.description,
+        });
+  
+        await fs.mkdir(inst.getGalleryDirPath(), {
+          recursive: true,
+        });
 
-      await fs.mkdir(galleryBuildDir, {
-        recursive: true,
-      });
+        prevGallery = inst.gallery;
+      }
 
-      const images = this.configManager.getImages(gallery.name);
+      if (prevImage !== inst.image) {
 
-      for (const image of images) {
-        console.log(`Generating "${image.name}" of "${gallery.name}"`);
-        const buffer = await this.configManager.objectStore.get(image.hash);
-        const imageMetadata = await sharp(buffer).metadata();
-
-        const meta = extractFilmInfo(imageMetadata);
-        const sluggedImageName = slugify(image.name).toLocaleLowerCase();
-
-        const extension = imageMetadata.format;
-
-        const fileNameOriginal = sluggedImageName + "_original." + extension;
-
-        const filePathOriginal = path.join(galleryBuildDir, fileNameOriginal);
+        const fileNameOriginal = inst.getOriginalSlugOutputName();
+        const filePathOriginal = inst.getFilePathOriginal();
+        const buffer = await store.get(inst.image.hash);
 
         if (!(await fileExists(filePathOriginal))) {
           console.log(`Writing ${filePathOriginal}`);
@@ -209,109 +201,53 @@ export class GaimaBuildCommand {
           console.log(`Skipping ${filePathOriginal}`);
         }
 
-        const imageType = this.configManager.getType(image.type);
-
-        if (imageType === undefined) {
-          throw new Error(
-            `Can't generate gallery as image type ${image.type} is not defined`
-          );
-        }
-
         descriptorBuilder.addImage({
-          name: image.name,
-          description: image.description,
-          meta: meta,
-          alt: image.alt,
-          favourite: image.favourite ?? false,
-          favouriteGallery: image.favouriteGallery,
+          name: inst.image.name,
+          description: inst.image.description,
+          meta: inst.image.meta,
+          alt: inst.image.alt,
+          favourite: inst.image.favourite ?? false,
+          favouriteGallery: inst.image.favouriteGallery,
           aspectRatio: {
-            x: image.type.split(":")[0],
-            y: image.type.split(":")[1],
+            x: inst.image.type.split(":")[0],
+            y: inst.image.type.split(":")[1],
           },
           originalImageUrl: galleryUrl + "/" + fileNameOriginal,
         });
 
-        for (const size of imageType.sizes) {
-          for (const type of OUTPUT_TYPES) {
-            const fileNameSize =
-              sluggedImageName + "_" + size.x + "x" + size.y + "." + type.id;
-
-            const filePathSize = path.join(galleryBuildDir, fileNameSize);
-
-            descriptorBuilder.addSize({
-              x: size.x,
-              y: size.y,
-              type: type.id,
-              url: galleryUrl + "/" + fileNameSize,
-            });
-
-            if (!(await fileExists(filePathSize))) {
-              console.log(`Writing ${filePathSize}`);
-              const resizedBuffer = await sharp(buffer)
-                .resize(size.x, size.y)
-                .toFormat(type)
-                .toBuffer();
-
-              await fs.writeFile(filePathSize, resizedBuffer);
-            } else {
-              console.log(`Skipping ${filePathSize}`);
-            }
-          }
-        }
+        prevImage = inst.image;
+        currentImageBuffer = buffer;
       }
+
+      const fileNameSize = inst.getImageSizeName();
+      const filePathSize = inst.getImageSizePath();
+
+      descriptorBuilder.addSize({
+        x: inst.size.x,
+        y: inst.size.y,
+        type: inst.fileType.id,
+        url: galleryUrl + "/" + fileNameSize,
+      });
+
+      if (!(await fileExists(filePathSize))) {
+        console.log(`Writing ${filePathSize}`);
+        const resizedBuffer = await sharp(currentImageBuffer)
+          .resize(inst.size.x, inst.size.y)
+          .toFormat(inst.fileType)
+          .toBuffer();
+
+        await fs.writeFile(filePathSize, resizedBuffer);
+      } else {
+        console.log(`Skipping ${filePathSize}`);
+      }
+          
+        
     }
     await fs.writeFile(
       path.join(buildDir, "galleries.json"),
       JSON.stringify(descriptorBuilder.descriptor, null, 2)
     );
   }
-}
-
-function extractFilmInfo(imageMetadata: sharp.Metadata): string | undefined {
-  const parser = new XMLParser({
-    removeNSPrefix: true,
-  });
-  if (imageMetadata.xmp !== undefined) {
-    const metadataBuffer = imageMetadata.xmp;
-    const metadataXml = metadataBuffer.toString("ascii");
-    const parsedXmp = parser.parse(metadataXml);
-    return extract(parsedXmp, [
-      "xmpmeta",
-      "RDF",
-      "Description",
-      (v: unknown) =>
-        Array.isArray(v) ?
-          v.reduce((p, c) => {
-            return Object.assign({}, p, c);
-          }, {}) : {},
-      "description",
-      "Alt",
-      "li",
-      (v: unknown) => typeof v === "string" ? v.replace(/\n.*/g, "") : undefined,
-    ]);
-  } else {
-    return undefined;
-  }
-}
-
-type ExtractorFunction = (v: object | [] | string) => object | string
-
-function extract(data: object | undefined, path: (string | ExtractorFunction)[]): string | undefined {
-  let last: object | string | undefined = data;
-  for (const loc of path) {
-    if (last === undefined) {
-      return undefined;
-    }
-    if (typeof loc === "function") {
-      last = loc(last);
-    } if (typeof loc === "object") {
-      last = (last as object)[loc];
-    }
-  }
-  if (typeof last === "object") {
-    return undefined;
-  }
-  return last;
 }
 
 async function fileExists(path: string) {

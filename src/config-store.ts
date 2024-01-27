@@ -24,6 +24,8 @@ const GaimaConfigValidation = z.object({
     images: z.array(z.object({
       name: z.string(),
       description: z.string().optional(),
+      originalFileExtension: z.string().optional(),
+      meta: z.string().optional(),
       hash: z.string(),
       type: z.string(),
       alt: z.string(),

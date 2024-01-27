@@ -4,7 +4,7 @@ import { GaimaApp } from "./app.js";
 import { GaimaCli } from "./cli.js";
 
 import { ConfigStore } from "./config-store.js";
-import { ConfigManager, ConfigError } from "./config-manager.js";
+import { ConfigManager, ConfigError, UpgradeResult } from "./config-manager.js";
 import { ObjectStore } from "./object-store.js";
 
 const CONFIG_FILE_NAME = "gaima.json";
@@ -20,6 +20,12 @@ async function run() {
   }
 
   const configManager = new ConfigManager(config, objectStore);
+
+  const upgradeResult = await configManager.upgrade();
+  if (upgradeResult == UpgradeResult.CHANGES) {
+    await store.save(configManager.config);
+  }
+
   const app = new GaimaApp(configManager);
 
   const cli = new GaimaCli(app);
