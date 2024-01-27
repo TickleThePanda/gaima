@@ -1,35 +1,34 @@
-import crypto from 'crypto';
+import crypto from "crypto";
 
-import path from 'path';
+import path from "path";
 
-import { promises as fs } from 'fs';
+import { promises as fs } from "fs";
 
-const OBJECTS_DIR = 'objects';
+const OBJECTS_DIR = "objects";
 
 export class ObjectStore {
   location: string;
-  
-  constructor(location) {
+
+  constructor(location: string) {
     this.location = location;
   }
 
   async setup() {
     await fs.mkdir(path.join(this.location, OBJECTS_DIR), {
-      recursive: true
+      recursive: true,
     });
   }
 
-  async store(buffer) {
-
-    const hasher = crypto.createHash('sha1');
+  async store(buffer: Buffer) {
+    const hasher = crypto.createHash("sha1");
     hasher.update(buffer);
-    const hash = hasher.digest('hex');
+    const hash = hasher.digest("hex");
 
-    const outPath = path.join(this.location, OBJECTS_DIR, hash)
+    const outPath = path.join(this.location, OBJECTS_DIR, hash);
 
     try {
       await fs.writeFile(outPath, buffer, {
-        flag: 'wx'
+        flag: "wx",
       });
     } catch (e: unknown) {
       /*
@@ -37,17 +36,16 @@ export class ObjectStore {
        * The risk of collision is very low.
        */
       if (e instanceof Error) {
-        if ("code" in e && e.code !== 'EEXIST') {
+        if ("code" in e && e.code !== "EEXIST") {
           throw e;
         }
       }
     }
 
     return hash;
-
   }
 
-  async get(hash) {
+  async get(hash: string) {
     const inPath = path.join(this.location, OBJECTS_DIR, hash);
     return await fs.readFile(inPath);
   }

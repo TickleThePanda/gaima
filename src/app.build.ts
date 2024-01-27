@@ -7,9 +7,38 @@ import slugify from "@sindresorhus/slugify";
 import { XMLParser } from "fast-xml-parser";
 import { ConfigManager } from "./config-manager.js";
 
-const OUTPUT_TYPES = ["webp", "jpeg"];
+const OUTPUT_TYPES = [sharp.format.webp, sharp.format.jpeg];
 
-slugify
+export type DescriptorBuilderConstructorOptions = {
+  name: string;
+  description: string;
+};
+
+export type GalleryDescriptorArgs = {
+  name: string;
+  ref: string;
+  description: string;
+};
+
+export type ImageDescriptorArgs = {
+  name: string;
+  description: string | undefined;
+  favourite: boolean;
+  alt: string;
+  meta: string | undefined;
+  originalImageUrl: string;
+  aspectRatio: {
+    x: string;
+    y: string;
+  };
+};
+
+export type SizeDescriptorArgs = {
+  x: number;
+  y: number;
+  type: sharp.AvailableFormatInfo;
+  url: string;
+};
 
 /**
  * This is a stateful builder that will add a gallery, image,
@@ -21,12 +50,11 @@ slugify
  * size will be added to that image in the gallery.
  */
 class DescriptorBuilder {
-
   descriptor: any;
   gallery: any;
   image: any;
 
-  constructor({ name, description }) {
+  constructor({ name, description }: DescriptorBuilderConstructorOptions) {
     this.descriptor = {
       name,
       description,
@@ -37,7 +65,7 @@ class DescriptorBuilder {
     this.image = null;
   }
 
-  addGallery({ name, ref, description }) {
+  addGallery({ name, ref, description }: GalleryDescriptorArgs) {
     const gallery = {
       name,
       ref,
@@ -57,7 +85,7 @@ class DescriptorBuilder {
     meta,
     originalImageUrl,
     aspectRatio,
-  }) {
+  }: ImageDescriptorArgs) {
     if (this.gallery === null) {
       throw new Error("To add an image, you must add a gallery first.");
     }
@@ -75,7 +103,7 @@ class DescriptorBuilder {
     this.image = image;
   }
 
-  addSize({ x, y, type, url }) {
+  addSize({ x, y, type, url }: SizeDescriptorArgs) {
     if (this.image === null) {
       throw new Error("To add a size, you must add an image first.");
     }
@@ -91,14 +119,13 @@ class DescriptorBuilder {
 }
 
 export class GaimaBuildCommand {
+  configManager: ConfigManager;
 
-  configManager: ConfigManager
-
-  constructor(configManager) {
+  constructor(configManager: ConfigManager) {
     this.configManager = configManager;
   }
 
-  async build(args) {
+  async build() {
     const buildDir = this.configManager.config.buildDir;
 
     const galleries = this.configManager.getGalleries();
@@ -147,12 +174,18 @@ export class GaimaBuildCommand {
 
         const imageType = this.configManager.getType(image.type);
 
+        if (imageType === undefined) {
+          throw new Error(
+            `Can't generate gallery as image type ${image.type} is not defined`
+          );
+        }
+
         descriptorBuilder.addImage({
           name: image.name,
           description: image.description,
           meta: meta,
           alt: image.alt,
-          favourite: image.favourite,
+          favourite: image.favourite ?? false,
           aspectRatio: {
             x: image.type.split(":")[0],
             y: image.type.split(":")[1],
@@ -163,7 +196,7 @@ export class GaimaBuildCommand {
         for (let size of imageType.sizes) {
           for (let type of OUTPUT_TYPES) {
             const fileNameSize =
-              sluggedImageName + "_" + size.x + "x" + size.y + "." + type;
+              sluggedImageName + "_" + size.x + "x" + size.y + "." + type.id;
 
             const filePathSize = path.join(galleryBuildDir, fileNameSize);
 
@@ -196,7 +229,7 @@ export class GaimaBuildCommand {
   }
 }
 
-function extractFilmInfo(imageMetadata) {
+function extractFilmInfo(imageMetadata: sharp.Metadata): string | undefined {
   const parser = new XMLParser({
     removeNSPrefix: true,
   });
@@ -208,21 +241,21 @@ function extractFilmInfo(imageMetadata) {
       "xmpmeta",
       "RDF",
       "Description",
-      (v) =>
+      (v: object[]) =>
         v.reduce((p, c) => {
           return Object.assign({}, p, c);
         }, {}),
       "description",
       "Alt",
       "li",
-      (v) => v.replace(/\n.*/g, ""),
+      (v: string) => v.replace(/\n.*/g, ""),
     ]);
   } else {
     return undefined;
   }
 }
 
-function extract(data, path) {
+function extract(data: any, path: (string | Function)[]): string | undefined {
   let last = data;
   for (const loc of path) {
     if (last === undefined) {
@@ -237,7 +270,7 @@ function extract(data, path) {
   return last;
 }
 
-async function fileExists(path) {
+async function fileExists(path: string) {
   try {
     await fs.access(path, fsConstants.F_OK);
     return true;

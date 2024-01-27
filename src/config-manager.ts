@@ -1,21 +1,87 @@
 import { ObjectStore } from "./object-store.js";
 
 export class ConfigError extends Error {
-  constructor(message) {
+  constructor(message: string) {
     super(message);
   }
 }
 
+export type AspectRatio = {
+  x: number;
+  y: number;
+};
+
+export type AspectRatioDimension = {
+  x: number;
+  y: number;
+};
+
+export type AddGalleryArgs = {
+  name: string;
+  description: string;
+};
+
+export type SetGalleryArgs = {
+  description: string;
+};
+
+export type AddImageArgs = {
+  name: string;
+  type: string;
+  buffer: Buffer;
+  description: string;
+  favourite: boolean;
+  alt: string;
+  overwrite: boolean;
+};
+
+export type RemoveImageArgs = {
+  name: string;
+};
+
+export type GaimaImageConfig = {
+  name: string;
+  hash: string;
+  type: string;
+  alt: string;
+  description: string | undefined;
+  favourite: boolean | undefined;
+};
+
+export type GaimaGalleryConfig = {
+  name: string;
+  description: string;
+  images?: GaimaImageConfig[];
+};
+
+export type GaimaConfig = {
+  buildDir: string;
+  name: string;
+  description: string;
+  types: GaimaAspectRatioTypeConfig[];
+  galleries: GaimaGalleryConfig[];
+};
+
+export type GaimaAspectRatioTypeConfig = {
+  name: string;
+  aspectRatio: {
+    x: number;
+    y: number;
+  };
+  sizes: AspectRatioDimension[];
+};
 export class ConfigManager {
-  config: any;
+  config: GaimaConfig;
   objectStore: ObjectStore;
 
-  constructor(config, objectStore) {
+  constructor(config: GaimaConfig, objectStore: ObjectStore) {
     this.config = config;
     this.objectStore = objectStore;
   }
 
-  getType(aspectRatio) {
+  getType(
+    aspectRatio: AspectRatio | string
+  ): GaimaAspectRatioTypeConfig | undefined {
     checkTypeConfigFormat(this.config.types);
 
     if (this.config.types === undefined) {
@@ -32,7 +98,7 @@ export class ConfigManager {
     }
   }
 
-  addType(aspectRatio, sizes) {
+  addType(aspectRatio: AspectRatio, sizes: AspectRatioDimension[]) {
     checkTypeConfigFormat(this.config.types);
 
     if (this.getType(aspectRatio) !== undefined) {
@@ -44,7 +110,7 @@ export class ConfigManager {
     this.setType(aspectRatio, sizes);
   }
 
-  setType(aspectRatio, sizes) {
+  setType(aspectRatio: AspectRatio, sizes: AspectRatioDimension[]) {
     checkTypeConfigFormat(this.config.types);
 
     const newAspectRatio = {
@@ -66,7 +132,7 @@ export class ConfigManager {
     }
   }
 
-  removeType(aspectRatio) {
+  removeType(aspectRatio: AspectRatio | string) {
     checkTypeConfigFormat(this.config.types);
 
     if (this.config.types === undefined) {
@@ -84,7 +150,7 @@ export class ConfigManager {
     );
   }
 
-  getTypes() {
+  getTypes(): GaimaAspectRatioTypeConfig[] {
     checkTypeConfigFormat(this.config.types);
     if (this.config.types === undefined) {
       return [];
@@ -92,7 +158,7 @@ export class ConfigManager {
     return this.config.types;
   }
 
-  addGallery({ name, description }) {
+  addGallery({ name, description }: AddGalleryArgs) {
     checkGalleriesConfigFormat(this.config.galleries);
 
     if (this.getGallery(name) !== undefined) {
@@ -108,7 +174,7 @@ export class ConfigManager {
     this.config.galleries.push(newGallery);
   }
 
-  setGallery(name, { description }) {
+  setGallery(name: string, { description }: SetGalleryArgs) {
     checkGalleriesConfigFormat(this.config.galleries);
 
     const gallery = this.getGallery(name);
@@ -120,7 +186,7 @@ export class ConfigManager {
     }
   }
 
-  getGallery(name) {
+  getGallery(name: string) {
     checkGalleriesConfigFormat(this.config.galleries);
 
     if (!Array.isArray(this.config.galleries)) {
@@ -139,7 +205,7 @@ export class ConfigManager {
     return this.config.galleries;
   }
 
-  removeGallery({ name }) {
+  removeGallery(name: string) {
     checkGalleriesConfigFormat(this.config.galleries);
 
     if (this.config.galleries === undefined) {
@@ -160,12 +226,18 @@ export class ConfigManager {
   }
 
   async addImage(
-    galleryName,
-    { name, type, buffer, description, alt, overwrite }
+    galleryName: string,
+    { name, type, buffer, description, favourite, alt, overwrite }: AddImageArgs
   ) {
     const hash = await this.objectStore.store(buffer);
 
     const gallery = this.getGallery(galleryName);
+
+    if (gallery === undefined) {
+      throw new ConfigError(
+        `Can't add image ${name} to non-existent gallery: ${gallery}`
+      );
+    }
 
     const existingImage = this.getImage(galleryName, { hash });
 
@@ -193,15 +265,19 @@ export class ConfigManager {
         hash,
         description,
         type,
+        favourite,
         alt,
       });
     }
   }
 
-  getImage(galleryName, { name, hash }: { name?: string, hash?: string }) {
+  getImage(
+    galleryName: string,
+    { name, hash }: { name?: string; hash?: string }
+  ) {
     const gallery = this.getGallery(galleryName);
 
-    const galleryImages = gallery.images;
+    const galleryImages = gallery?.images;
 
     if (!Array.isArray(galleryImages)) {
       return undefined;
@@ -216,7 +292,7 @@ export class ConfigManager {
     }
   }
 
-  getImages(galleryName) {
+  getImages(galleryName: string): GaimaImageConfig[] {
     const gallery = this.getGallery(galleryName);
 
     if (gallery === undefined) {
@@ -234,7 +310,7 @@ export class ConfigManager {
     return gallery.images;
   }
 
-  removeImage(galleryName, { name }) {
+  removeImage(galleryName: string, { name }: RemoveImageArgs) {
     const gallery = this.getGallery(galleryName);
 
     if (gallery === undefined) {
@@ -249,11 +325,11 @@ export class ConfigManager {
       throw new ConfigError(`No image with name ${name} in ${galleryName}`);
     }
 
-    gallery.images = gallery.images.filter((i) => !Object.is(i, image));
+    gallery.images = gallery.images?.filter((i) => !Object.is(i, image));
   }
 }
 
-function checkTypeConfigFormat(types) {
+function checkTypeConfigFormat(types: unknown) {
   if (types === undefined) {
     return;
   } else if (!Array.isArray(types)) {
@@ -263,7 +339,7 @@ function checkTypeConfigFormat(types) {
   }
 }
 
-function checkGalleriesConfigFormat(galleries) {
+function checkGalleriesConfigFormat(galleries: unknown) {
   if (galleries === undefined) {
     return;
   } else if (!Array.isArray(galleries)) {

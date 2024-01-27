@@ -1,8 +1,11 @@
-import yargs from "yargs";
+import yargs, { Argv } from "yargs";
+import { GaimaApp } from "./app.js";
+
+import { hideBin } from "yargs/helpers";
 
 export class GaimaCli {
-  app: any;
-  constructor(app) {
+  app: GaimaApp;
+  constructor(app: GaimaApp) {
     this.app = app;
   }
 
@@ -11,10 +14,49 @@ export class GaimaCli {
      * Wraps this in a promise to handle the onFinishCommand
      * resolution asynchronously to make yargs async.
      */
-    const args = yargs
+    yargs(hideBin(process.argv))
+      .command({
+        command: "type",
+        describe: "Manage the types of images",
+        builder: (yargs) =>
+          yargs
+            .command({
+              command: "add <aspect-ratio> <sizes...>",
+              describe: "Add a new image type",
+              builder: (yargs) => buildTypeSpecifier(yargs),
+              handler: async (args) => this.app.type.add(args),
+            })
+            .command({
+              command: "set <aspect-ratio> <sizes...>",
+              describe: "Set the sizes for an image type",
+              builder: (yargs) => buildTypeSpecifier(yargs),
+              handler: async (args) => this.app.type.set(args),
+            })
+            .command({
+              command: "list",
+              describe: "List image types",
+              handler: async () => this.app.type.list(),
+            })
+            .command({
+              command: "remove <aspect-ratio>",
+              describe: "Remove image type",
+              builder: (yargs) =>
+                yargs.positional("aspect-ratio", {
+                  type: "string",
+                  coerce: coerceAspectRatio,
+                  description:
+                    "the aspect ratio in the format <x>:<y> where <x> and <y> are positive integers, e.g. 3:2",
+                  demandOption: true,
+                }),
+              handler: async (args) => this.app.type.remove(args),
+            })
+            .demandCommand(1, 'Please provide a "type" command.'),
+        handler: async () => {},
+      })
       .command({
         command: "init",
-        desc: "Initialise a gallery. By default, this will ask questions for each of the options.",
+        describe:
+          "Initialise a gallery. By default, this will ask questions for each of the options.",
         builder: (yargs) =>
           yargs
             .option("quiet", {
@@ -37,176 +79,158 @@ export class GaimaCli {
               describe:
                 "The build directory. This can be relative to the current directory.",
             }),
-      })
-      .command({
-        command: "type",
-        desc: "Manage the types of images",
-        builder: (yargs) =>
-          yargs
-            .command({
-              command: "add <aspect-ratio> <sizes...>",
-              desc: "Add a new image type",
-              builder: (yargs) => buildTypeSpecifier(yargs),
-            })
-            .command({
-              command: "set <aspect-ratio> <sizes...>",
-              desc: "Set the sizes for an image type",
-              builder: (yargs) => buildTypeSpecifier(yargs),
-            })
-            .command({
-              command: "list",
-              desc: "List image types",
-              builder: (yargs) => yargs,
-            })
-            .command({
-              command: "remove <aspect-ratio>",
-              desc: "Remove image type",
-              builder: (yargs) => yargs,
-            })
-            .demandCommand(1, 'Please provide a "type" command.'),
+        handler: async (args) => await this.app.init.init(args),
       })
       .command({
         command: "gallery",
-        desc: "Manage the galleries",
+        describe: "Manage the galleries",
         builder: (yargs) =>
           yargs
             .command({
               command: "create <name>",
-              desc: "Creates a new gallery",
-              builder: (yargs) => yargs.option("description"),
+              describe: "Creates a new gallery",
+              builder: (yargs) =>
+                yargs
+                  .positional("name", {
+                    type: "string",
+                    demandOption: true,
+                  })
+                  .option("description", {
+                    type: "string",
+                    demandOption: true,
+                  }),
+              handler: (args) => this.app.gallery.create(args),
             })
             .command({
               command: "list",
-              desc: "List the galleries",
+              describe: "List the galleries",
               builder: (yargs) => yargs,
+              handler: () => this.app.gallery.list(),
             })
             .command({
               command: "set <name>",
-              desc: "List the galleries",
-              builder: (yargs) => yargs.option("description"),
+              describe: "List the galleries",
+              builder: (yargs) =>
+                yargs
+                  .positional("name", {
+                    type: "string",
+                    demandOption: true,
+                  })
+                  .option("description", {
+                    type: "string",
+                    demandOption: true,
+                  }),
+              handler: (args) => this.app.gallery.set(args),
             })
             .command({
               command: "remove <name>",
-              desc: "Remove gallery",
-              builder: (yargs) => yargs,
+              describe: "Remove gallery",
+              builder: (yargs) =>
+                yargs.positional("name", {
+                  type: "string",
+                  demandOption: true,
+                }),
+              handler: (args) => this.app.gallery.remove(args),
             })
             .demandCommand(1, 'Please provide a "gallery" command.'),
+        handler: () => {},
       })
       .command({
         command: "image",
-        desc: "Manage the images in a gallery",
+        describe: "Manage the images in a gallery",
         builder: (yargs) =>
           yargs
             .command({
               command: "add <gallery> <image-path>",
-              desc: "Add a new image to a gallery",
+              describe: "Add a new image to a gallery",
               builder: (yargs) =>
                 yargs
+                  .positional("gallery", {
+                    type: "string",
+                    demandOption: true,
+                  })
+                  .positional("image-path", {
+                    type: "string",
+                    demandOption: true,
+                  })
                   .option("name", {
                     type: "string",
                     describe:
                       "The name of the image. By default, it will be the file basename.",
+                    demandOption: true,
                   })
                   .option("type", {
                     type: "string",
                     describe:
                       "The image type to use. By default, this will be inferred by the image dimensions and available types.",
+                    demandOption: true,
                   })
                   .option("description", {
                     type: "string",
                     describe:
                       "The description of the image used to give any background information about the image.",
+                    demandOption: true,
+                  })
+                  .option("favourite", {
+                    type: "boolean",
+                    describe:
+                      "Whether the image should be included in favourites.",
+                    default: false,
                   })
                   .option("alt", {
                     type: "string",
                     describe:
                       "An alternative description for if the image fails to load in the gallery or for screen reader users.",
-                    require: true,
+                    demandOption: true,
                   })
                   .option("overwrite", {
                     type: "boolean",
                     describe: "Overwrite an existing image",
+                    default: false,
                   }),
+              handler: (args) => this.app.image.add(args),
             })
             .command({
               command: "list <gallery>",
-              desc: "Lists the images in a gallery",
-              builder: (yargs) => yargs,
+              describe: "Lists the images in a gallery",
+              builder: (yargs) =>
+                yargs.positional("gallery", {
+                  type: "string",
+                  demandOption: true,
+                }),
+              handler: (args) => this.app.image.list(args),
             })
             .command({
               command: "remove <gallery> <image-name>",
-              desc: "Removes the image from the gallery",
-              builder: (yargs) => yargs,
+              describe: "Removes the gallery",
+              builder: (yargs) =>
+                yargs
+                  .positional("gallery", {
+                    type: "string",
+                    demandOption: true,
+                  })
+                  .positional("image-name", {
+                    type: "string",
+                    demandOption: true,
+                  }),
+              handler: (args) => this.app.image.remove(args),
             })
             .demandCommand(1, 'Please provide an "image" command.'),
+        handler: () => {},
       })
       .command({
         command: "build",
-        desc: "Builds the gallery",
+        describe: "Builds the gallery",
         builder: (yargs) => yargs,
+        handler: () => this.app.build.build(),
       })
       .demandCommand(1, "Please provide a command.")
-      .strict().argv;
-
-    return await run(this.app, args);
+      .strict()
+      .parse();
   }
 }
 
-async function run(app, args) {
-  const COMMAND_HANDLERS = {
-    init: (args) => app.init.init(args),
-    type: {
-      add: (args) => app.type.add(args),
-      set: (args) => app.type.set(args),
-      list: (args) => app.type.list(args),
-      remove: (args) => app.type.remove(args),
-    },
-    gallery: {
-      create: (args) => app.gallery.create(args),
-      set: (args) => app.gallery.set(args),
-      list: (args) => app.gallery.list(args),
-      remove: (args) => app.gallery.remove(args),
-    },
-    image: {
-      add: (args) => app.image.add(args),
-      list: (args) => app.image.list(args),
-      remove: (args) => app.image.remove(args),
-    },
-    build: (args) => app.build.build(args),
-  };
-
-  let providedCommands: string[] = Array.from(args._);
-  let commandMap: Record<string, any> = COMMAND_HANDLERS;
-
-  let fn: any = null;
-
-  while (providedCommands.length !== 0) {
-    const thisCommand = providedCommands.shift() as string; // can't be undefined because of while loop.
-
-    const nextCommandMap = commandMap[thisCommand];
-
-    if (nextCommandMap === undefined) {
-      throw new Error(
-        `Could not find handler for command "${args._.join(" ")}".`
-      );
-    } else if (typeof nextCommandMap === "object") {
-      commandMap = nextCommandMap;
-    } else if (typeof nextCommandMap === "function") {
-      fn = nextCommandMap;
-      break;
-    }
-  }
-
-  if (fn === null) {
-    throw new Error(
-      `Could not find handler for command "${args._.join(" ")}".`
-    );
-  }
-
-  return await fn(args);
-}
-
-function coerceAspectRatio(arg) {
+function coerceAspectRatio(arg: string) {
   const aspectRatioTuple = arg.split(":");
   if (aspectRatioTuple.length !== 2) {
     throw new Error(
@@ -228,8 +252,11 @@ function coerceAspectRatio(arg) {
   };
 }
 
-function coerceSizes(arg) {
-  const convertedSizes: any[] = [];
+function coerceSizes(arg: string) {
+  const convertedSizes: {
+    x: number;
+    y: number;
+  }[] = [];
 
   for (let size of arg) {
     const sizeTuple = size.split("x");
@@ -254,7 +281,7 @@ function coerceSizes(arg) {
   return convertedSizes;
 }
 
-function checkSizesMatchAspectRatio(argv) {
+function checkSizesMatchAspectRatio(argv: any) {
   const { x: arX, y: arY } = argv.aspectRatio;
 
   const maxDelta = 5;
@@ -270,20 +297,22 @@ function checkSizesMatchAspectRatio(argv) {
   return true;
 }
 
-function buildTypeSpecifier(yargs) {
+function buildTypeSpecifier(yargs: Argv<{}>) {
   return yargs
     .positional("aspect-ratio", {
       type: "string",
       coerce: coerceAspectRatio,
       description:
         "the aspect ratio in the format <x>:<y> where <x> and <y> are positive integers, e.g. 3:2",
+      demandOption: true,
     })
     .positional("sizes", {
-      type: "array",
+      type: "string",
       coerce: coerceSizes,
       description:
         "a list of sizes in the format <x>x<y> where <x> and <y> are positive integers and must have the correct aspect ratio, e.g. 150x100",
+      demandOption: true,
     })
-    .option("description")
+    .option("description", {})
     .check(checkSizesMatchAspectRatio);
 }
