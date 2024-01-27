@@ -33,6 +33,7 @@ export type AddImageArgs = {
   favourite: boolean;
   alt: string;
   overwrite: boolean;
+  favouriteGallery: string | undefined
 };
 
 export type RemoveImageArgs = {
@@ -44,8 +45,9 @@ export type GaimaImageConfig = {
   hash: string;
   type: string;
   alt: string;
-  description: string | undefined;
-  favourite: boolean | undefined;
+  description?: string | undefined;
+  favourite?: boolean | undefined;
+  favouriteGallery?: string | undefined
 };
 
 export type GaimaGalleryConfig = {
@@ -227,7 +229,7 @@ export class ConfigManager {
 
   async addImage(
     galleryName: string,
-    { name, type, buffer, description, favourite, alt, overwrite }: AddImageArgs
+    { name, type, buffer, description, favourite, alt, overwrite, favouriteGallery }: AddImageArgs
   ) {
     const hash = await this.objectStore.store(buffer);
 
@@ -259,6 +261,8 @@ export class ConfigManager {
       existingImage.description = description;
       existingImage.type = type;
       existingImage.alt = alt;
+      existingImage.favourite = favourite;
+      existingImage.favouriteGallery = favouriteGallery;
     } else {
       gallery.images.push({
         name,
@@ -267,6 +271,7 @@ export class ConfigManager {
         type,
         favourite,
         alt,
+        favouriteGallery
       });
     }
   }

@@ -183,6 +183,12 @@ export class GaimaCli {
                       "An alternative description for if the image fails to load in the gallery or for screen reader users.",
                     demandOption: true,
                   })
+                  .option("favourite-gallery", {
+                    type: "string",
+                    describe:
+                      "Which favourite gallery this belongs to.",
+                    demandOption: true,
+                  })
                   .option("overwrite", {
                     type: "boolean",
                     describe: "Overwrite an existing image",

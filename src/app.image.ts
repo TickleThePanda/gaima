@@ -21,6 +21,7 @@ export type ImageAddCommandArgs = {
   type: string;
   overwrite: boolean;
   favourite: boolean;
+  favouriteGallery: string | undefined;
 };
 
 export type ImageListCommandArgs = {
@@ -48,6 +49,7 @@ export class GaimaImageCommand {
     alt: alt,
     type: typeName,
     overwrite,
+    favouriteGallery
   }: ImageAddCommandArgs) {
     const gallery = this.configManager.getGallery(galleryName);
 
@@ -114,6 +116,7 @@ export class GaimaImageCommand {
       favourite,
       alt: alt,
       overwrite,
+      favouriteGallery
     });
   }
 

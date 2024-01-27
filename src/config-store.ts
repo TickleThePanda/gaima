@@ -28,6 +28,7 @@ const GaimaConfigValidation = z.object({
       type: z.string(),
       alt: z.string(),
       favourite: z.boolean().optional(),
+      favouriteGallery: z.string().optional()
     }))
   }))
 
@@ -44,7 +45,7 @@ export class ConfigStore {
       const content = await fs.readFile(this.location, {
         encoding: "utf-8",
       });
-      return JSON.parse(content) as GaimaConfig;
+      return GaimaConfigValidation.parse(JSON.parse(content));
     } catch (err) {
       if (err instanceof SyntaxError) {
         throw new Error("Unable to parse config file");

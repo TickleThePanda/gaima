@@ -24,6 +24,7 @@ export type ImageDescriptorArgs = {
   name: string;
   description: string | undefined;
   favourite: boolean;
+  favouriteGallery: string | undefined;
   alt: string;
   meta: string | undefined;
   originalImageUrl: string;
@@ -115,6 +116,7 @@ class DescriptorBuilder {
     name,
     description,
     favourite,
+    favouriteGallery,
     alt,
     meta,
     originalImageUrl,
@@ -127,6 +129,7 @@ class DescriptorBuilder {
       name,
       description,
       favourite,
+      favouriteGallery,
       alt,
       meta,
       originalImageUrl,
@@ -220,6 +223,7 @@ export class GaimaBuildCommand {
           meta: meta,
           alt: image.alt,
           favourite: image.favourite ?? false,
+          favouriteGallery: image.favouriteGallery,
           aspectRatio: {
             x: image.type.split(":")[0],
             y: image.type.split(":")[1],
