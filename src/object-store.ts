@@ -31,13 +31,15 @@ export class ObjectStore {
       await fs.writeFile(outPath, buffer, {
         flag: 'wx'
       });
-    } catch (e) {
+    } catch (e: unknown) {
       /*
        * Assume that, if it already exists, it's the same file.
        * The risk of collision is very low.
        */
-      if (e.code !== 'EEXIST') {
-        throw e;
+      if (e instanceof Error) {
+        if ("code" in e && e.code !== 'EEXIST') {
+          throw e;
+        }
       }
     }
 

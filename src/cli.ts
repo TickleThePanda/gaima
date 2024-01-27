@@ -178,10 +178,10 @@ async function run(app, args) {
   let providedCommands: string[] = Array.from(args._);
   let commandMap: Record<string, any> = COMMAND_HANDLERS;
 
-  let fn = null;
+  let fn: any = null;
 
   while (providedCommands.length !== 0) {
-    const thisCommand = providedCommands.shift();
+    const thisCommand = providedCommands.shift() as string; // can't be undefined because of while loop.
 
     const nextCommandMap = commandMap[thisCommand];
 
@@ -229,7 +229,7 @@ function coerceAspectRatio(arg) {
 }
 
 function coerceSizes(arg) {
-  const convertedSizes = [];
+  const convertedSizes: any[] = [];
 
   for (let size of arg) {
     const sizeTuple = size.split("x");

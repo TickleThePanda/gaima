@@ -108,7 +108,7 @@ async function inferTypeFromDimensions(types, imageMetadata) {
 }
 
 function findClosestMatchingAr(types, aspectRatioFraction) {
-  let typeWithClosestRatio = null;
+  let typeWithClosestRatio: any = null;
 
   for (let type of types) {
     if (typeWithClosestRatio === null) {

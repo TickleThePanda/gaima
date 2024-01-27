@@ -18,10 +18,16 @@ export class ConfigStore {
         throw new Error('Unable to parse config file');
       }
 
-      if (err.code === 'ENOENT') {
-        return {};
+      if (err instanceof Error && "code" in err) {
+        if (err.code === 'ENOENT') {
+          return {};
+        } else {
+          throw new Error('Config file ' + this.location + ' could not be read: ' + err.code);
+        }
       } else {
-        throw new Error('Config file ' + this.location + ' could not be read: ' + err.code);
+        throw new Error(`Unexpected error occurred while reading file ${this.location}`, {
+          cause: err
+        });
       }
     }
 
