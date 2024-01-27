@@ -36,7 +36,41 @@ export type ImageDescriptorArgs = {
 export type SizeDescriptorArgs = {
   x: number;
   y: number;
-  type: sharp.AvailableFormatInfo;
+  type: string;
+  url: string;
+};
+
+export type Descriptor = {
+  name: string;
+  description: string;
+  galleries: GalleryDescriptor[]
+}
+
+export type GalleryDescriptor = {
+  name: string;
+  ref: string;
+  description: string;
+  images: ImageDescriptor[]
+}
+
+export type ImageDescriptor = {
+  name: string;
+  description: string | undefined;
+  favourite: boolean;
+  alt: string;
+  meta: string | undefined;
+  originalImageUrl: string;
+  sizes: SizeDescriptor[];
+  aspectRatio: {
+    x: string;
+    y: string;
+  },
+}
+
+export type SizeDescriptor = {
+  x: number,
+  y: number,
+  type: string;
   url: string;
 };
 
@@ -50,9 +84,9 @@ export type SizeDescriptorArgs = {
  * size will be added to that image in the gallery.
  */
 class DescriptorBuilder {
-  descriptor: any;
-  gallery: any;
-  image: any;
+  descriptor: Descriptor;
+  gallery: GalleryDescriptor | undefined;
+  image: ImageDescriptor | undefined;
 
   constructor({ name, description }: DescriptorBuilderConstructorOptions) {
     this.descriptor = {
@@ -61,8 +95,8 @@ class DescriptorBuilder {
       galleries: [],
     };
 
-    this.gallery = null;
-    this.image = null;
+    this.gallery = undefined;
+    this.image = undefined;
   }
 
   addGallery({ name, ref, description }: GalleryDescriptorArgs) {
@@ -74,7 +108,7 @@ class DescriptorBuilder {
     };
     this.descriptor.galleries.push(gallery);
     this.gallery = gallery;
-    this.image = null;
+    this.image = undefined;
   }
 
   addImage({
@@ -86,7 +120,7 @@ class DescriptorBuilder {
     originalImageUrl,
     aspectRatio,
   }: ImageDescriptorArgs) {
-    if (this.gallery === null) {
+    if (this.gallery === undefined) {
       throw new Error("To add an image, you must add a gallery first.");
     }
     const image = {
@@ -104,7 +138,7 @@ class DescriptorBuilder {
   }
 
   addSize({ x, y, type, url }: SizeDescriptorArgs) {
-    if (this.image === null) {
+    if (this.image === undefined) {
       throw new Error("To add a size, you must add an image first.");
     }
     const size = {
@@ -134,7 +168,7 @@ export class GaimaBuildCommand {
       description: this.configManager.config.description,
     });
 
-    for (let gallery of galleries) {
+    for (const gallery of galleries) {
       const slugifiedGalleryName = slugify(gallery.name).toLowerCase();
       descriptorBuilder.addGallery({
         name: gallery.name,
@@ -151,7 +185,7 @@ export class GaimaBuildCommand {
 
       const images = this.configManager.getImages(gallery.name);
 
-      for (let image of images) {
+      for (const image of images) {
         console.log(`Generating "${image.name}" of "${gallery.name}"`);
         const buffer = await this.configManager.objectStore.get(image.hash);
         const imageMetadata = await sharp(buffer).metadata();
@@ -193,8 +227,8 @@ export class GaimaBuildCommand {
           originalImageUrl: galleryUrl + "/" + fileNameOriginal,
         });
 
-        for (let size of imageType.sizes) {
-          for (let type of OUTPUT_TYPES) {
+        for (const size of imageType.sizes) {
+          for (const type of OUTPUT_TYPES) {
             const fileNameSize =
               sluggedImageName + "_" + size.x + "x" + size.y + "." + type.id;
 
@@ -203,7 +237,7 @@ export class GaimaBuildCommand {
             descriptorBuilder.addSize({
               x: size.x,
               y: size.y,
-              type: type,
+              type: type.id,
               url: galleryUrl + "/" + fileNameSize,
             });
 
@@ -241,31 +275,37 @@ function extractFilmInfo(imageMetadata: sharp.Metadata): string | undefined {
       "xmpmeta",
       "RDF",
       "Description",
-      (v: object[]) =>
-        v.reduce((p, c) => {
-          return Object.assign({}, p, c);
-        }, {}),
+      (v: unknown) =>
+        Array.isArray(v) ?
+          v.reduce((p, c) => {
+            return Object.assign({}, p, c);
+          }, {}) : {},
       "description",
       "Alt",
       "li",
-      (v: string) => v.replace(/\n.*/g, ""),
+      (v: unknown) => typeof v === "string" ? v.replace(/\n.*/g, "") : undefined,
     ]);
   } else {
     return undefined;
   }
 }
 
-function extract(data: any, path: (string | Function)[]): string | undefined {
-  let last = data;
+type ExtractorFunction = (v: object | [] | string) => object | string
+
+function extract(data: object | undefined, path: (string | ExtractorFunction)[]): string | undefined {
+  let last: object | string | undefined = data;
   for (const loc of path) {
     if (last === undefined) {
       return undefined;
     }
     if (typeof loc === "function") {
       last = loc(last);
-    } else {
-      last = last[loc];
+    } if (typeof loc === "object") {
+      last = (last as object)[loc];
     }
+  }
+  if (typeof last === "object") {
+    return undefined;
   }
   return last;
 }

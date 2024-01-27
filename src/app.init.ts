@@ -4,7 +4,7 @@ import process from "process";
 import { ConfigManager } from "./config-manager.js";
 
 function findFirstNonNull<T>(items: T[]): T | undefined {
-  for (let item of items) {
+  for (const item of items) {
     if (item !== undefined && item !== null) {
       return item;
     }

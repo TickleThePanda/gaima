@@ -56,7 +56,7 @@ export class GaimaTypeCommand {
 
     if (types.length === 0) {
       console.log(
-        'There are no types specified for this gallery, use "gaima types add" to add a new type.'
+        "There are no types specified for this gallery, use \"gaima types add\" to add a new type."
       );
     } else {
       console.log(types.map(formatType).join(EOL));

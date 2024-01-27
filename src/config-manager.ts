@@ -186,7 +186,7 @@ export class ConfigManager {
     }
   }
 
-  getGallery(name: string) {
+  getGallery(name: string): GaimaGalleryConfig | undefined {
     checkGalleriesConfigFormat(this.config.galleries);
 
     if (!Array.isArray(this.config.galleries)) {
@@ -196,7 +196,7 @@ export class ConfigManager {
     return this.config.galleries.find((g) => g.name === name);
   }
 
-  getGalleries() {
+  getGalleries(): GaimaGalleryConfig[] {
     checkGalleriesConfigFormat(this.config.galleries);
 
     if (this.config.galleries === undefined) {

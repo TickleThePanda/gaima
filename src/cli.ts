@@ -1,4 +1,4 @@
-import yargs, { Argv } from "yargs";
+import yargs, { Arguments, Argv } from "yargs";
 import { GaimaApp } from "./app.js";
 
 import { hideBin } from "yargs/helpers";
@@ -50,7 +50,7 @@ export class GaimaCli {
                 }),
               handler: async (args) => this.app.type.remove(args),
             })
-            .demandCommand(1, 'Please provide a "type" command.'),
+            .demandCommand(1, "Please provide a \"type\" command."),
         handler: async () => {},
       })
       .command({
@@ -132,7 +132,7 @@ export class GaimaCli {
                 }),
               handler: (args) => this.app.gallery.remove(args),
             })
-            .demandCommand(1, 'Please provide a "gallery" command.'),
+            .demandCommand(1, "Please provide a \"gallery\" command."),
         handler: () => {},
       })
       .command({
@@ -215,7 +215,7 @@ export class GaimaCli {
                   }),
               handler: (args) => this.app.image.remove(args),
             })
-            .demandCommand(1, 'Please provide an "image" command.'),
+            .demandCommand(1, "Please provide an \"image\" command."),
         handler: () => {},
       })
       .command({
@@ -258,7 +258,7 @@ function coerceSizes(arg: string) {
     y: number;
   }[] = [];
 
-  for (let size of arg) {
+  for (const size of arg) {
     const sizeTuple = size.split("x");
     if (sizeTuple.length !== 2) {
       throw new Error(
@@ -281,12 +281,21 @@ function coerceSizes(arg: string) {
   return convertedSizes;
 }
 
-function checkSizesMatchAspectRatio(argv: any) {
-  const { x: arX, y: arY } = argv.aspectRatio;
+function checkSizesMatchAspectRatio(argv: Arguments<{
+  "aspect-ratio": { 
+    x: number,
+    y: number
+  },
+  sizes: {
+    x: number,
+    y: number
+  }[]
+}>) {
+  const { x: arX, y: arY } = argv["aspect-ratio"];
 
   const maxDelta = 5;
 
-  for (let { x, y } of argv.sizes) {
+  for (const { x, y } of argv.sizes) {
     if (Math.abs(x * arY - y * arX) > maxDelta) {
       throw new Error(
         x + "x" + y + " does not have an aspect ratio of " + arX + ":" + arY
@@ -297,7 +306,7 @@ function checkSizesMatchAspectRatio(argv: any) {
   return true;
 }
 
-function buildTypeSpecifier(yargs: Argv<{}>) {
+function buildTypeSpecifier(yargs: Argv<object>) {
   return yargs
     .positional("aspect-ratio", {
       type: "string",

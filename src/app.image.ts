@@ -72,9 +72,17 @@ export class GaimaImageCommand {
     const type = await (isTypeSpecified
       ? this.configManager.getType(typeName)
       : inferTypeFromDimensions(
-          this.configManager.getTypes(),
-          imageMetadata as { width: number; height: number }
-        ));
+        this.configManager.getTypes(),
+        imageMetadata as { width: number; height: number }
+      ));
+    
+    if (type === undefined) {
+      throw new Error(
+        isTypeSpecified ?
+          `Can't find type ${typeName}.` :
+          "Can't infer image type."
+      );
+    }
 
     const imageArFraction = imageMetadata.width / imageMetadata.height;
     const typeArFraction = type.aspectRatio.x / type.aspectRatio.y;
@@ -141,7 +149,7 @@ async function inferTypeFromDimensions(
 ) {
   if (types.length === 0) {
     throw new ConfigError(
-      `Could not infer dimension. There are no types specified.`
+      "Could not infer dimension. There are no types specified."
     );
   }
 
@@ -154,10 +162,10 @@ function findClosestMatchingAr(
   types: GaimaAspectRatioTypeConfig[],
   aspectRatioFraction: number
 ) {
-  let typeWithClosestRatio: any = null;
+  let typeWithClosestRatio: GaimaAspectRatioTypeConfig | undefined = undefined;
 
-  for (let type of types) {
-    if (typeWithClosestRatio === null) {
+  for (const type of types) {
+    if (typeWithClosestRatio === undefined) {
       typeWithClosestRatio = type;
     } else {
       const closestRatio =
