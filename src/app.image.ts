@@ -3,6 +3,7 @@ import {
   ConfigError,
   ConfigManager,
   GaimaImageConfig,
+  GaimaGalleryConfig,
 } from "./config-manager.js";
 import { promises as fs, constants } from "fs";
 import { EOL } from "os";
@@ -18,11 +19,22 @@ export type ImageAddCommandArgs = {
   name: string;
   description: string;
   alt: string;
-  type: string;
+  type: string | undefined;
   overwrite: boolean;
   favourite: boolean;
   favouriteGallery: string | undefined;
 };
+
+export type ImagePatchCommandArgs = {
+  gallery: string;
+  imageName: string;
+  name: string | undefined;
+  description: string | undefined;
+  alt: string | undefined;
+  type: string | undefined;
+  favourite: boolean | undefined;
+  favouriteGallery: string | undefined;
+}
 
 export type ImageListCommandArgs = {
   gallery: string;
@@ -62,45 +74,7 @@ export class GaimaImageCommand {
     const imageBuffer = await getImageContent(imagePath);
     const imageMetadata = await sharp(imageBuffer).metadata();
 
-    if (
-      imageMetadata.width === undefined ||
-      imageMetadata.height === undefined
-    ) {
-      throw Error("Can't extract image width and height");
-    }
-
-    const isTypeSpecified = typeName !== undefined;
-
-    const type = await (isTypeSpecified
-      ? this.configManager.getType(typeName)
-      : inferTypeFromDimensions(
-        this.configManager.getTypes(),
-        imageMetadata as { width: number; height: number }
-      ));
-    
-    if (type === undefined) {
-      throw new Error(
-        isTypeSpecified ?
-          `Can't find type ${typeName}.` :
-          "Can't infer image type."
-      );
-    }
-
-    const imageArFraction = imageMetadata.width / imageMetadata.height;
-    const typeArFraction = type.aspectRatio.x / type.aspectRatio.y;
-
-    const error = Math.abs(
-      (imageArFraction - typeArFraction) * imageArFraction
-    );
-
-    if (error > AR_ERROR_WARNING_MIN) {
-      console.log(
-        `Warning: Using the aspect ratio ${type.name} but the` +
-          `percentage error between selected aspect ratio and actual aspect ratio is ${toPercent(
-            error
-          )} `
-      );
-    }
+    const type = await this.getType(imageMetadata, typeName);
 
     const isImageSpecified = imageName !== undefined;
 
@@ -120,10 +94,57 @@ export class GaimaImageCommand {
     });
   }
 
+  async patch({
+    gallery: galleryName,
+    imageName,
+    name,
+    description,
+    alt,
+    type,
+    favourite,
+    favouriteGallery,
+  }: ImagePatchCommandArgs) {
+
+    const gallery = this.configManager.getGallery(galleryName);
+
+    if (gallery === undefined) {
+      throw new ConfigError(
+        `Could not add image to ${galleryName}: the gallery doesn't exist.`
+      );
+    }
+
+    await this.configManager.updateImage(galleryName, imageName, {
+      name,
+      description,
+      alt,
+      type,
+      favourite,
+      favouriteGallery
+    });
+
+  }
+
   async list({ gallery: galleryName }: ImageListCommandArgs) {
     const images = this.configManager.getImages(galleryName);
 
     console.log(images.map(formatImage).join(EOL));
+  }
+
+  async listFavourites({
+    filterNoFavouriteGallery: noFavouriteGallery
+  }: {
+    filterNoFavouriteGallery: boolean | undefined
+  }) {
+    const galleries = this.configManager.getGalleries();
+    const images = galleries.flatMap(g => this.configManager.getImages(g.name).map(i => ({
+      gallery: g,
+      image: i
+    })));
+
+    const favourites = images.filter(i => i.image.favourite && (noFavouriteGallery ? i.image.favouriteGallery === undefined : true));
+
+    console.log(favourites.map(formatImageFavourite).join(EOL));
+
   }
 
   async remove({
@@ -134,12 +155,58 @@ export class GaimaImageCommand {
       name: imageName,
     });
   }
+
+  async getType(imageMetadata: sharp.Metadata, typeName: string | undefined) {
+    if (imageMetadata.width === undefined ||
+      imageMetadata.height === undefined) {
+      throw Error("Can't extract image width and height");
+    }
+
+    const isTypeSpecified = typeName !== undefined;
+
+    const type = await (isTypeSpecified
+      ? this.configManager.getType(typeName)
+      : inferTypeFromDimensions(
+        this.configManager.getTypes(),
+        imageMetadata as { width: number; height: number; }
+      ));
+
+    if (type === undefined) {
+      throw new Error(
+        isTypeSpecified ?
+          `Can't find type ${typeName}.` :
+          "Can't infer image type."
+      );
+    }
+
+    const imageArFraction = imageMetadata.width / imageMetadata.height;
+    const typeArFraction = type.aspectRatio.x / type.aspectRatio.y;
+
+    const error = Math.abs(
+      (imageArFraction - typeArFraction) * imageArFraction
+    );
+
+    if (error > AR_ERROR_WARNING_MIN) {
+      console.log(
+        `Warning: Using the aspect ratio ${type.name} but the` +
+        `percentage error between selected aspect ratio and actual aspect ratio is ${toPercent(
+          error
+        )} `
+      );
+    }
+    return type;
+  }
 }
 
+
 function formatImage({ name, hash, type, description }: GaimaImageConfig) {
-  return `${name} - ${hash} - ${type}${
+  return `${name} - ${hash} - ${type} ${
     description !== undefined ? " - " + description : ""
   }`;
+}
+
+function formatImageFavourite({ gallery, image }: { gallery: GaimaGalleryConfig, image: GaimaImageConfig }) {
+  return `${gallery.name} - ${image.name} - ${image.favouriteGallery ?? "not specified"}`;
 }
 
 function toPercent(error: number) {

@@ -14,7 +14,7 @@ export class GaimaCli {
      * Wraps this in a promise to handle the onFinishCommand
      * resolution asynchronously to make yargs async.
      */
-    yargs(hideBin(process.argv))
+    await (yargs(hideBin(process.argv))
       .command({
         command: "type",
         describe: "Manage the types of images",
@@ -163,7 +163,6 @@ export class GaimaCli {
                     type: "string",
                     describe:
                       "The image type to use. By default, this will be inferred by the image dimensions and available types.",
-                    demandOption: true,
                   })
                   .option("description", {
                     type: "string",
@@ -221,6 +220,67 @@ export class GaimaCli {
                   }),
               handler: (args) => this.app.image.remove(args),
             })
+            .command({
+              command: "patch <gallery> <image-name>",
+              describe: "Updates specified values of an image",
+              builder: (yargs) =>
+                yargs
+                  .positional("gallery", {
+                    type: "string",
+                    demandOption: true,
+                  })
+                  .positional("image-name", {
+                    type: "string",
+                    demandOption: true
+                  })
+                  .option("name", {
+                    type: "string",
+                    describe:
+                      "The name of the image.",
+                  })
+                  .option("type", {
+                    type: "string",
+                    describe:
+                      "The image type to use. By default, this will be inferred by the image dimensions and available types.",
+                  })
+                  .option("description", {
+                    type: "string",
+                    describe:
+                      "The description of the image used to give any background information about the image.",
+                  })
+                  .option("favourite", {
+                    type: "boolean",
+                    describe:
+                      "Whether the image should be included in favourites.",
+                  })
+                  .option("alt", {
+                    type: "string",
+                    describe:
+                      "An alternative description for if the image fails to load in the gallery or for screen reader users.",
+                  })
+                  .option("favourite-gallery", {
+                    type: "string",
+                    describe:
+                      "Which favourite gallery this belongs to.",
+                  })
+                  .option("overwrite", {
+                    type: "boolean",
+                    describe: "Overwrite an existing image",
+                  }),
+              handler: (args) => this.app.image.patch(args)
+            })
+            .command({
+              command: "list-favourites",
+              describe: "List images marked as favourite",
+              builder: (yargs) =>
+                yargs
+                  .option("filter-no-favourite-gallery", {
+                    type: "boolean",
+                    describe: "Filter by favourites without a favourite gallery",
+                    default: false
+                  }),
+              handler: (args) => this.app.image.listFavourites(args)
+            })
             .demandCommand(1, "Please provide an \"image\" command."),
         handler: () => {},
       })
@@ -232,7 +292,8 @@ export class GaimaCli {
       })
       .demandCommand(1, "Please provide a command.")
       .strict()
-      .parse();
+      .parse()
+    );
   }
 }
 

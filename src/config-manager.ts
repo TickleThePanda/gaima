@@ -36,6 +36,16 @@ export type AddImageArgs = {
   favouriteGallery: string | undefined
 };
 
+export type UpdateImageArgs = {
+  name: string | undefined;
+  type: string | undefined;
+  description: string | undefined;
+  favourite: boolean | undefined;
+  alt: string | undefined;
+  favouriteGallery: string | undefined
+};
+
+
 export type RemoveImageArgs = {
   name: string;
 };
@@ -274,6 +284,26 @@ export class ConfigManager {
         favouriteGallery
       });
     }
+  }
+
+  async updateImage(
+    galleryName: string,
+    imageName: string,
+    { name, type, description, favourite, alt, favouriteGallery }: UpdateImageArgs
+  ) {
+    const existingImage = this.getImage(galleryName, { name: imageName });
+
+    if (existingImage === undefined) {
+      throw new ConfigError(`There is no image with the name ${imageName} in ${galleryName}`);
+    }
+
+    existingImage.name = name ?? existingImage.name;
+    existingImage.type = type ?? existingImage.type;
+    existingImage.description = description ?? existingImage.description;
+    existingImage.favourite = favourite ??  existingImage.favourite;
+    existingImage.alt = alt ?? existingImage.alt;
+    existingImage.favouriteGallery = favouriteGallery ?? existingImage.favouriteGallery;
+
   }
 
   getImage(
