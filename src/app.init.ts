@@ -1,6 +1,7 @@
 import Enquirer from 'enquirer';
 import path from 'path';
 import process from 'process';
+import { ConfigManager } from './config-manager.js';
 
 function findFirstNonNull(items) {
   for (let item of items) {
@@ -14,6 +15,8 @@ function findFirstNonNull(items) {
 const INITIAL_BUILD_DIR = 'dist';
 
 export class GaimaInitCommand {
+  configManager: ConfigManager;
+
   constructor(configManager) {
     this.configManager = configManager;
   }

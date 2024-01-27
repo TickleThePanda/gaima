@@ -1,4 +1,4 @@
-import { ConfigError } from "./config-manager.js";
+import { ConfigError, ConfigManager } from "./config-manager.js";
 import { promises as fs, constants } from "fs";
 import { EOL } from "os";
 import path from "path";
@@ -8,6 +8,8 @@ import sharp from "sharp";
 const AR_ERROR_WARNING_MIN = 0.001;
 
 export class GaimaImageCommand {
+  configManager: ConfigManager;
+
   constructor(configManager) {
     this.configManager = configManager;
   }
@@ -131,5 +133,5 @@ function findClosestMatchingAr(types, aspectRatioFraction) {
 async function getImageContent(imagePath) {
   const imageFileHandle = await fs.open(imagePath, constants.O_RDONLY);
 
-  return await imageFileHandle.readFile(imageFileHandle);
+  return await imageFileHandle.readFile();
 }

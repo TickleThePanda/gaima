@@ -10,13 +10,18 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@sindresorhus/slugify": "^2.2.1",
     "enquirer": "^2.3.4",
     "fast-xml-parser": "^4.2.4",
     "sharp": "^0.28.0",
-    "slugify": "^1.4.0",
+    "ts-node": "^10.9.2",
     "yargs": "^15.3.1"
   },
   "bin": {
-    "gaima": "./src/index.js"
+    "gaima": "./src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.7",
+    "typescript": "^5.3.3"
   }
 }

@@ -2,11 +2,14 @@ import { promises as fs, constants as fsConstants } from "fs";
 import path from "path";
 
 import sharp from "sharp";
-import slugify from "slugify";
+import slugify from "@sindresorhus/slugify";
 
 import { XMLParser } from "fast-xml-parser";
+import { ConfigManager } from "./config-manager.js";
 
 const OUTPUT_TYPES = ["webp", "jpeg"];
+
+slugify
 
 /**
  * This is a stateful builder that will add a gallery, image,
@@ -18,6 +21,11 @@ const OUTPUT_TYPES = ["webp", "jpeg"];
  * size will be added to that image in the gallery.
  */
 class DescriptorBuilder {
+
+  descriptor: any;
+  gallery: any;
+  image: any;
+
   constructor({ name, description }) {
     this.descriptor = {
       name,
@@ -83,6 +91,9 @@ class DescriptorBuilder {
 }
 
 export class GaimaBuildCommand {
+
+  configManager: ConfigManager
+
   constructor(configManager) {
     this.configManager = configManager;
   }
@@ -93,7 +104,7 @@ export class GaimaBuildCommand {
     const galleries = this.configManager.getGalleries();
     const descriptorBuilder = new DescriptorBuilder({
       name: this.configManager.config.name,
-      description: this.configManager.description,
+      description: this.configManager.config.description,
     });
 
     for (let gallery of galleries) {

@@ -1,6 +1,7 @@
 import yargs from "yargs";
 
 export class GaimaCli {
+  app: any;
   constructor(app) {
     this.app = app;
   }
@@ -174,8 +175,8 @@ async function run(app, args) {
     build: (args) => app.build.build(args),
   };
 
-  let providedCommands = Array.from(args._);
-  let commandMap = COMMAND_HANDLERS;
+  let providedCommands: string[] = Array.from(args._);
+  let commandMap: Record<string, any> = COMMAND_HANDLERS;
 
   let fn = null;
 

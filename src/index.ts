@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --no-warnings --unhandled-rejections=strict
+#!/usr/bin/env -S npx ts-node --esm
 
 import { GaimaApp } from './app.js';
 import { GaimaCli } from './cli.js';

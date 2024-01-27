@@ -1,13 +1,16 @@
 import { promises as fs } from 'fs';
 
 export class ConfigStore {
+  location: string;
   constructor(location) {
     this.location = location;
   }
 
   async load() {
     try {
-      const content = await fs.readFile(this.location);
+      const content = await fs.readFile(this.location, {
+        encoding: "utf-8"
+      });
       return JSON.parse(content);
     } catch (err) {
 

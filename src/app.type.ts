@@ -1,6 +1,8 @@
 import { EOL } from 'os';
+import { ConfigManager } from './config-manager.js'
 
 export class GaimaTypeCommand {
+  configManager: ConfigManager;
 
   constructor(configManager) {
     this.configManager = configManager;

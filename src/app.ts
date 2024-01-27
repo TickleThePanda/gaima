@@ -6,6 +6,12 @@ import { GaimaBuildCommand } from './app.build.js';
 
 export class GaimaApp {
 
+  init: any;
+  type: any;
+  gallery: any;
+  image: any;
+  build: any;
+
   constructor(configManager) {
     this.init = new GaimaInitCommand(configManager);
     this.type = new GaimaTypeCommand(configManager);

@@ -1,3 +1,5 @@
+import { ObjectStore } from "./object-store.js";
+
 export class ConfigError extends Error {
   constructor(message) {
     super(message);
@@ -5,6 +7,9 @@ export class ConfigError extends Error {
 }
 
 export class ConfigManager {
+  config: any;
+  objectStore: ObjectStore;
+
   constructor(config, objectStore) {
     this.config = config;
     this.objectStore = objectStore;
@@ -193,7 +198,7 @@ export class ConfigManager {
     }
   }
 
-  getImage(galleryName, { name, hash }) {
+  getImage(galleryName, { name, hash }: { name?: string, hash?: string }) {
     const gallery = this.getGallery(galleryName);
 
     const galleryImages = gallery.images;
@@ -223,7 +228,7 @@ export class ConfigManager {
     }
     if (!Array.isArray(gallery.images)) {
       throw new ConfigError(
-        `Unrecognised config format. "gallery.images" was of type "${typeof types}", not "array"`
+        `Unrecognised config format. "gallery.images" was of type "${typeof gallery.images}", not "array"`
       );
     }
     return gallery.images;

@@ -7,6 +7,8 @@ import { promises as fs } from 'fs';
 const OBJECTS_DIR = 'objects';
 
 export class ObjectStore {
+  location: string;
+  
   constructor(location) {
     this.location = location;
   }
