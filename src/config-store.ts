@@ -1,6 +1,38 @@
 import { promises as fs } from "fs";
 import { GaimaConfig } from "./config-manager.js";
 
+import { z } from "zod";
+
+const GaimaConfigValidation = z.object({
+  name: z.string(),
+  description: z.string(),
+  buildDir: z.string(),
+  types: z.array(z.object({
+    name: z.string(),
+    aspectRatio: z.object({
+      x: z.number(),
+      y: z.number()
+    }),
+    sizes: z.array(z.object({
+      x: z.number(),
+      y: z.number()
+    }))
+  })),
+  galleries: z.array(z.object({
+    name: z.string(),
+    description: z.string(),
+    images: z.array(z.object({
+      name: z.string(),
+      description: z.string().optional(),
+      hash: z.string(),
+      type: z.string(),
+      alt: z.string(),
+      favourite: z.boolean().optional(),
+    }))
+  }))
+
+});
+
 export class ConfigStore {
   location: string;
   constructor(location: string) {
