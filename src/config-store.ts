@@ -25,7 +25,7 @@ const GaimaConfigValidation = z.object({
       name: z.string(),
       description: z.string().optional(),
       originalFileExtension: z.string().optional(),
-      meta: z.string().optional(),
+      meta: z.string().optional().nullable(),
       hash: z.string(),
       type: z.string(),
       alt: z.string(),
